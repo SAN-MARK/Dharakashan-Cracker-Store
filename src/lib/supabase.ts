@@ -1,9 +1,29 @@
 import { createClient } from '@supabase/supabase-js';
+import { Product } from '../types';
+import { PRODUCTS } from '../data/products';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+const getSupabaseConfig = () => {
+  let url = import.meta.env.VITE_SUPABASE_URL || '';
+  let key = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
-const isSupabaseConfigured = !!supabaseUrl && !!supabaseAnonKey;
+  // Clean up potential misconfiguration (e.g., if key was mistakenly set to the URL, or is invalid)
+  if (!url || url.includes('your-supabase') || !url.startsWith('http')) {
+    url = 'https://gkfjssptlnniltguwojh.supabase.co';
+  }
+
+  if (!key || key.startsWith('http') || key.includes('your-supabase-anon')) {
+    key = 'sb_publishable_NdIT74bjP6w4DpLhLFBoKA_K5yZDBs5';
+  }
+
+  return { url, key };
+};
+
+const { url: cleanedUrl, key: cleanedAnonKey } = getSupabaseConfig();
+
+export const supabaseUrl = cleanedUrl;
+export const supabaseAnonKey = cleanedAnonKey;
+
+export const isSupabaseConfigured = !!supabaseUrl && !!supabaseAnonKey;
 
 // Real Supabase client instance (or null if not configured)
 export const supabase = isSupabaseConfigured 
@@ -15,6 +35,8 @@ if (!isSupabaseConfigured) {
     "⚠️ Supabase is not configured yet. VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are missing in environment. " +
     "Falling back to local storage simulation for delivery check, bulk orders, and e-commerce state."
   );
+} else {
+  console.log("🎯 Supabase client successfully initialized with URL:", supabaseUrl, "Key prefix:", supabaseAnonKey.substring(0, 15) + "...");
 }
 
 // Ensure local tables are initialized in localStorage if Supabase is missing
@@ -213,5 +235,358 @@ export const dbService = {
     reviews.unshift(idReview);
     localStorage.setItem('db_reviews', JSON.stringify(reviews));
     return idReview;
+  },
+
+  /**
+   * Fetch all products from Supabase (auto-seeds if table is empty)
+   */
+  async getProducts(): Promise<Product[]> {
+    if (isSupabaseConfigured && supabase) {
+      try {
+        console.log("Fetching products from Supabase...");
+        const { data, error } = await supabase
+          .from('products')
+          .select('*')
+          .order('id', { ascending: true });
+
+        if (error) {
+          console.error("Supabase products fetch error, using local fallback:", error);
+          throw error;
+        }
+
+        if (data && data.length > 0) {
+          console.log(`Successfully loaded ${data.length} products from Supabase!`);
+          return data.map((item: any) => ({
+            id: String(item.id),
+            name: item.name,
+            category: item.category,
+            price: Number(item.price),
+            originalPrice: item.original_price ? Number(item.original_price) : (item.originalPrice ? Number(item.originalPrice) : undefined),
+            rating: item.rating ? Number(item.rating) : 4.5,
+            reviewCount: item.review_count ? Number(item.review_count) : (item.reviewCount ? Number(item.reviewCount) : 45),
+            image: item.image_url || item.image || 'https://images.unsplash.com/photo-1596461404969-9ae70f2830c1?auto=format&fit=crop&q=80&w=500',
+            description: item.description,
+            isBestSeller: item.is_best_seller || item.isBestSeller || false,
+            safetyRating: item.safety_rating || item.safetyRating || 'PESO Approved (Green)',
+            brand: item.brand || 'Sivakasi Elite',
+            soundLevel: item.sound_level || item.soundLevel || 'Low',
+            stock: item.stock ? Number(item.stock) : 100
+          }));
+        } else {
+          console.log("Supabase products table is empty. Auto-seeding database...");
+          const seedResult = await this.seedSupabase();
+          if (seedResult.success) {
+            // Re-fetch after seed
+            const { data: refetchedData } = await supabase
+              .from('products')
+              .select('*')
+              .order('id', { ascending: true });
+            if (refetchedData && refetchedData.length > 0) {
+              return refetchedData.map((item: any) => ({
+                id: String(item.id),
+                name: item.name,
+                category: item.category,
+                price: Number(item.price),
+                originalPrice: item.original_price ? Number(item.original_price) : (item.originalPrice ? Number(item.originalPrice) : undefined),
+                rating: item.rating ? Number(item.rating) : 4.5,
+                reviewCount: item.review_count ? Number(item.review_count) : (item.reviewCount ? Number(item.reviewCount) : 45),
+                image: item.image_url || item.image,
+                description: item.description,
+                isBestSeller: item.is_best_seller || item.isBestSeller || false,
+                safetyRating: item.safety_rating || item.safetyRating || 'PESO Approved (Green)',
+                brand: item.brand || 'Sivakasi Elite',
+                soundLevel: item.sound_level || item.soundLevel || 'Low',
+                stock: item.stock ? Number(item.stock) : 100
+              }));
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Supabase products fetch or auto-seed exception, using local fallback:", err);
+      }
+    }
+
+    // Default Fallback
+    console.log("Using static products list fallback.");
+    return PRODUCTS;
+  },
+
+  /**
+   * Seed sample data into Supabase (products, orders, order_items)
+   */
+  async seedSupabase(): Promise<{ success: boolean; message: string; error?: any }> {
+    if (!isSupabaseConfigured || !supabase) {
+      return { success: false, message: 'Supabase is not configured yet.' };
+    }
+
+    try {
+      console.log("Seeding products table...");
+      // Define 6 sample products with exact requested attributes: name, description, price, image_url, category, stock
+      const sampleProducts = [
+        {
+          id: 'p1',
+          name: 'Imperial Golden Sparklers (10 Pcs)',
+          description: 'Ultra-safe, low-smoke golden sparklers. Burns with a brilliant golden shower, perfect for kids under adult supervision. PESO safety approved.',
+          price: 180,
+          image_url: 'https://images.unsplash.com/photo-1596461404969-9ae70f2830c1?auto=format&fit=crop&q=80&w=500',
+          image: 'https://images.unsplash.com/photo-1596461404969-9ae70f2830c1?auto=format&fit=crop&q=80&w=500',
+          category: 'sparklers',
+          stock: 120,
+          original_price: 250,
+          rating: 4.8,
+          brand: 'Sparkle Safe'
+        },
+        {
+          id: 'p2',
+          name: 'Crackling Emerald Sparklers (10 Pcs)',
+          description: 'Vibrant green sparklers that produce a series of gentle, delightful crackles. Highly engaging and completely safe.',
+          price: 220,
+          image_url: 'https://images.unsplash.com/photo-1596461404969-9ae70f2830c1?auto=format&fit=crop&q=80&w=500',
+          image: 'https://images.unsplash.com/photo-1596461404969-9ae70f2830c1?auto=format&fit=crop&q=80&w=500',
+          category: 'sparklers',
+          stock: 95,
+          original_price: 300,
+          rating: 4.6,
+          brand: 'Sivakasi Elite'
+        },
+        {
+          id: 'p3',
+          name: 'Royal Multi-Color Flower Pots',
+          description: 'Classic festive flower pots that shoot majestic fountains of multi-color sparks up to 10 feet in the air. Smooth burning.',
+          price: 350,
+          image_url: 'https://images.unsplash.com/photo-1517457373958-b7bdd4587205?auto=format&fit=crop&q=80&w=500',
+          image: 'https://images.unsplash.com/photo-1517457373958-b7bdd4587205?auto=format&fit=crop&q=80&w=500',
+          category: 'flowerpots',
+          stock: 80,
+          original_price: 450,
+          rating: 4.9,
+          brand: 'Sivakasi Elite'
+        },
+        {
+          id: 'p4',
+          name: 'Mega Golden Shower Fountain',
+          description: 'Extra tall and dense golden sparkle fountain. Emits a dense column of shimmering gold stars, lighting up the entire courtyard.',
+          price: 420,
+          image_url: 'https://images.unsplash.com/photo-1517457373958-b7bdd4587205?auto=format&fit=crop&q=80&w=500',
+          image: 'https://images.unsplash.com/photo-1517457373958-b7bdd4587205?auto=format&fit=crop&q=80&w=500',
+          category: 'flowerpots',
+          stock: 150,
+          original_price: 600,
+          rating: 4.7,
+          brand: 'Sparkle Safe'
+        },
+        {
+          id: 'p5',
+          name: 'Glittering Star Sky-Shot Rocket',
+          description: 'Shoots high into the sky and explodes into a beautiful umbrella pattern of green and violet glittering stars.',
+          price: 490,
+          image_url: 'https://images.unsplash.com/photo-1533928298208-27ff66555d8d?auto=format&fit=crop&q=80&w=500',
+          image: 'https://images.unsplash.com/photo-1533928298208-27ff66555d8d?auto=format&fit=crop&q=80&w=500',
+          category: 'rockets',
+          stock: 60,
+          original_price: 700,
+          rating: 4.5,
+          brand: 'Sivakasi Elite'
+        },
+        {
+          id: 'p6',
+          name: 'Screaming Whistler Sky Rocket',
+          description: 'Features high whistling noise followed by silver chrysanthemums pattern. Very popular traditional cracker.',
+          price: 380,
+          image_url: 'https://images.unsplash.com/photo-1533928298208-27ff66555d8d?auto=format&fit=crop&q=80&w=500',
+          image: 'https://images.unsplash.com/photo-1533928298208-27ff66555d8d?auto=format&fit=crop&q=80&w=500',
+          category: 'rockets',
+          stock: 110,
+          original_price: 500,
+          rating: 4.4,
+          brand: 'Sivakasi Elite'
+        }
+      ];
+
+      // Upsert products to database
+      const { error: prodError } = await supabase
+        .from('products')
+        .upsert(sampleProducts, { onConflict: 'id' });
+
+      if (prodError) {
+        console.error("Failed to insert sample products:", prodError);
+        throw prodError;
+      }
+
+      console.log("Seeding orders table...");
+      // Define 3 sample orders with requested attributes: customer_name, phone, address, total_amount, status
+      const sampleOrders = [
+        {
+          id: 'ord-1001',
+          customer_name: 'Rajesh Kumar',
+          phone: '9840123456',
+          address: '12, Gandhi Nagar First Street, Adyar, Chennai - 600020',
+          total_amount: 1250,
+          status: 'Delivered',
+          created_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString()
+        },
+        {
+          id: 'ord-1002',
+          customer_name: 'Karthik Raja',
+          phone: '9443210987',
+          address: '45B, West Masi Street, Madurai - 625001',
+          total_amount: 850,
+          status: 'Confirmed',
+          created_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString()
+        },
+        {
+          id: 'ord-1003',
+          customer_name: 'Priya Sundar',
+          phone: '9566112233',
+          address: '7, Bharathi Avenue, Kovaipudur, Coimbatore - 641042',
+          total_amount: 3500,
+          status: 'Pending',
+          created_at: new Date().toISOString()
+        }
+      ];
+
+      const { error: orderError } = await supabase
+        .from('orders')
+        .upsert(sampleOrders, { onConflict: 'id' });
+
+      if (orderError) {
+        console.error("Failed to insert sample orders:", orderError);
+        throw orderError;
+      }
+
+      console.log("Seeding order_items table...");
+      // Define order items referencing valid order_id and product_id
+      const sampleOrderItems = [
+        {
+          id: 'item-1',
+          order_id: 'ord-1001',
+          product_id: 'p1',
+          quantity: 2,
+          price: 180
+        },
+        {
+          id: 'item-2',
+          order_id: 'ord-1001',
+          product_id: 'p3',
+          quantity: 1,
+          price: 350
+        },
+        {
+          id: 'item-3',
+          order_id: 'ord-1002',
+          product_id: 'p2',
+          quantity: 3,
+          price: 220
+        },
+        {
+          id: 'item-4',
+          order_id: 'ord-1003',
+          product_id: 'p5',
+          quantity: 5,
+          price: 490
+        }
+      ];
+
+      const { error: itemError } = await supabase
+        .from('order_items')
+        .upsert(sampleOrderItems, { onConflict: 'id' });
+
+      if (itemError) {
+        console.error("Failed to insert sample order items:", itemError);
+        throw itemError;
+      }
+
+      console.log("Supabase seeding completed successfully!");
+      return { success: true, message: 'All sample data successfully seeded to Supabase!' };
+    } catch (err: any) {
+      console.error("Seeding operation failed:", err);
+      return { success: false, error: err, message: err.message || 'Seeding failed' };
+    }
+  },
+
+  /**
+   * Fetch all orders
+   */
+  async getOrders() {
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { data, error } = await supabase
+          .from('orders')
+          .select('*')
+          .order('created_at', { ascending: false });
+        if (!error && data) return data;
+      } catch (err) {
+        console.error("Supabase orders fetch error", err);
+      }
+    }
+    return JSON.parse(localStorage.getItem('sparkle_orders') || '[]');
+  },
+
+  /**
+   * Fetch order items for an order
+   */
+  async getOrderItems(orderId: string) {
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { data, error } = await supabase
+          .from('order_items')
+          .select('*')
+          .eq('order_id', orderId);
+        if (!error && data) return data;
+      } catch (err) {
+        console.error("Supabase order items fetch error", err);
+      }
+    }
+    return [];
+  },
+
+  /**
+   * Save a newly placed order & order items to Supabase
+   */
+  async saveOrder(order: { id: string; customer_name: string; phone: string; address: string; total_amount: number; status: string }, items: any[]) {
+    if (isSupabaseConfigured && supabase) {
+      try {
+        console.log("Saving order to Supabase...");
+        const { error: orderErr } = await supabase
+          .from('orders')
+          .insert([{
+            id: order.id,
+            customer_name: order.customer_name,
+            phone: order.phone,
+            address: order.address,
+            total_amount: order.total_amount,
+            status: order.status,
+            created_at: new Date().toISOString()
+          }]);
+
+        if (orderErr) {
+          console.error("Supabase saveOrder error:", orderErr);
+          throw orderErr;
+        }
+
+        const orderItemsPayload = items.map((item, idx) => ({
+          id: `item-${order.id}-${idx}`,
+          order_id: order.id,
+          product_id: item.productId || item.product?.id,
+          quantity: item.quantity,
+          price: Number(item.price || item.product?.price || 0)
+        }));
+
+        const { error: itemsErr } = await supabase
+          .from('order_items')
+          .insert(orderItemsPayload);
+
+        if (itemsErr) {
+          console.error("Supabase saveOrder items error:", itemsErr);
+          throw itemsErr;
+        }
+
+        console.log("Order saved to Supabase successfully!");
+        return true;
+      } catch (err) {
+        console.error("Exception saving order to Supabase, falling back safely", err);
+      }
+    }
+    return false;
   }
 };

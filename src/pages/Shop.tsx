@@ -13,6 +13,7 @@ interface ShopProps {
   isLoggedIn: boolean;
   setCurrentPage: (page: Page) => void;
   language: Language;
+  products?: Product[];
 }
 
 export default function Shop({
@@ -23,6 +24,7 @@ export default function Shop({
   isLoggedIn,
   setCurrentPage,
   language,
+  products = PRODUCTS,
 }: ShopProps) {
   // Sync page state with global filters passed from home
   const [selectedCategory, setSelectedCategory] = useState(searchFilters.category || 'all');
@@ -60,7 +62,7 @@ export default function Shop({
   ];
 
   // Filtering Logic
-  const filteredProducts = PRODUCTS.filter((product) => {
+  const filteredProducts = products.filter((product) => {
     // 1. Category Filter
     if (selectedCategory !== 'all' && product.category !== selectedCategory) {
       return false;

@@ -22,6 +22,7 @@ interface HomeProps {
   setSelectedProduct: (product: Product | null) => void;
   isLoggedIn: boolean;
   language: Language;
+  products?: Product[];
 }
 
 export default function Home({
@@ -31,6 +32,7 @@ export default function Home({
   setSelectedProduct,
   isLoggedIn,
   language,
+  products = PRODUCTS,
 }: HomeProps) {
   // Local Search / Filter states
   const [searchTerm, setSearchTerm] = useState('');
@@ -98,7 +100,7 @@ export default function Home({
   ];
 
   // Best sellers
-  const bestSellers = PRODUCTS.filter((p) => p.isBestSeller).slice(0, 4);
+  const bestSellers = products.filter((p) => p.isBestSeller).slice(0, 4);
 
   // Trigger search mapping to shop page
   const handleSearchSubmit = (e: React.FormEvent) => {

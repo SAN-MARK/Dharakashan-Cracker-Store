@@ -10,6 +10,7 @@ interface ComboBuilderProps {
   isLoggedIn: boolean;
   setCurrentPage: (page: any) => void;
   language?: Language;
+  products?: Product[];
 }
 
 const BOX_OPTIONS = [
@@ -18,13 +19,13 @@ const BOX_OPTIONS = [
   { id: 'box-grand', name: 'Royal Emperor Gold Box', price: 499, description: 'Heavy, royal metal-accented keepsake box with gold-foil embossed greetings.', capacity: 'Holds up to 50 items' }
 ];
 
-export default function ComboBuilder({ addToCart, isLoggedIn, setCurrentPage, language = 'en' }: ComboBuilderProps) {
+export default function ComboBuilder({ addToCart, isLoggedIn, setCurrentPage, language = 'en', products = PRODUCTS }: ComboBuilderProps) {
   const [selectedBox, setSelectedBox] = useState(BOX_OPTIONS[0]);
   const [comboName, setComboName] = useState("My Festive Dhamaka");
   const [selectedItems, setSelectedItems] = useState<{ [productId: string]: number }>({});
 
   // Filter out other pre-made combos to show only individual items
-  const buildableProducts = PRODUCTS.filter(p => p.category !== 'combos');
+  const buildableProducts = products.filter(p => p.category !== 'combos');
 
   const handleUpdateQty = (productId: string, delta: number) => {
     setSelectedItems(prev => {
@@ -43,7 +44,7 @@ export default function ComboBuilder({ addToCart, isLoggedIn, setCurrentPage, la
   // Calculate Running Totals
   const itemsTotal = Object.entries(selectedItems).reduce((sum, [id, qtyVal]) => {
     const qty = qtyVal as number;
-    const prod = PRODUCTS.find(p => p.id === id);
+    const prod = products.find(p => p.id === id);
     if (!prod) return sum;
     // Apply wholesale bulk pricing if qty >= 10
     const unitPrice = getItemUnitPrice(prod, qty);
@@ -52,7 +53,7 @@ export default function ComboBuilder({ addToCart, isLoggedIn, setCurrentPage, la
 
   const itemsOriginalTotal = Object.entries(selectedItems).reduce((sum, [id, qtyVal]) => {
     const qty = qtyVal as number;
-    const prod = PRODUCTS.find(p => p.id === id);
+    const prod = products.find(p => p.id === id);
     if (!prod) return sum;
     return sum + ((prod.originalPrice || prod.price) * qty);
   }, 0);
@@ -71,7 +72,7 @@ export default function ComboBuilder({ addToCart, isLoggedIn, setCurrentPage, la
     const itemStrings: string[] = [];
     Object.entries(selectedItems).forEach(([id, qtyVal]) => {
       const qty = qtyVal as number;
-      const prod = PRODUCTS.find(p => p.id === id);
+      const prod = products.find(p => p.id === id);
       if (prod) {
         itemStrings.push(`${qty}x ${prod.name}`);
       }
@@ -88,7 +89,7 @@ export default function ComboBuilder({ addToCart, isLoggedIn, setCurrentPage, la
       originalPrice: originalTotal > finalTotal ? originalTotal : undefined,
       rating: 5.0,
       reviewCount: 1,
-      image: PRODUCTS.find(p => p.id === 'p11')?.image || '', // Fallback to premium combo box image
+      image: products.find(p => p.id === 'p11')?.image || '', // Fallback to premium combo box image
       description: comboDescription,
       isBestSeller: false,
       safetyRating: 'PESO Approved Box',

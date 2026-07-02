@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X, Plus, Minus, Trash2, CheckCircle, Flame, ShieldAlert, ShoppingBag, MessageCircle } from 'lucide-react';
 import { CartItem, Product } from '../types';
 import { getItemUnitPrice, getItemTotalPrice } from '../lib/pricing';
+import { dbService } from '../lib/supabase';
 
 interface CartDrawerProps {
   isOpen: boolean;
@@ -138,6 +139,24 @@ export default function CartDrawer({
     const existingOrders = JSON.parse(localStorage.getItem('sparkle_orders') || '[]');
     existingOrders.unshift(orderRecord);
     localStorage.setItem('sparkle_orders', JSON.stringify(existingOrders));
+
+    // Save to Supabase (robust fallback try-catch)
+    try {
+      await dbService.saveOrder({
+        id: customerId,
+        customer_name: fullName || "Anonymous",
+        phone: phone || "",
+        address: address || "",
+        total_amount: finalTotal,
+        status: 'Confirmed'
+      }, cart.map(item => ({
+        productId: item.product.id,
+        quantity: item.quantity,
+        price: item.product.price
+      })));
+    } catch (dbErr) {
+      console.error("Failed to persist order to Supabase:", dbErr);
+    }
 
     // Clear the main application cart state
     clearCart();
