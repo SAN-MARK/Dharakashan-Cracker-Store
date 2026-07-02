@@ -13,6 +13,20 @@ interface CartDrawerProps {
   userName: string | null;
 }
 
+const loadRazorpayScript = (): Promise<boolean> => {
+  return new Promise((resolve) => {
+    if ((window as any).Razorpay) {
+      resolve(true);
+      return;
+    }
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+};
+
 export default function CartDrawer({
   isOpen,
   onClose,
@@ -32,6 +46,7 @@ export default function CartDrawer({
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
   const [deliveryDate, setDeliveryDate] = useState('2026-11-01'); // Safe pre-diwali shipping dates
+  const [paymentMode, setPaymentMode] = useState<'cod' | 'online'>('cod');
   const [submitting, setSubmitting] = useState(false);
   const [orderId, setOrderId] = useState('');
 
@@ -47,6 +62,73 @@ export default function CartDrawer({
   const shipping = subtotal > 1000 ? 0 : subtotal === 0 ? 0 : 150;
   const finalTotal = subtotal + shipping;
 
+  const submitOrderToSheet = async (customerId: string) => {
+    // Submit each cart item individually to Sheet.best
+    for (let i = 0; i < cart.length; i++) {
+      const item = cart[i];
+      const sn = `P${String(i + 1).padStart(3, '0')}`;
+      
+      // Calculate item discount percentage
+      const discountPercent = item.product.originalPrice
+        ? Math.round(((item.product.originalPrice - item.product.price) / item.product.originalPrice) * 100)
+        : 0;
+
+      const orderData = {
+        "S/N": sn,
+        "Full Name": fullName || "",
+        "Email": email || "",
+        "Contact Number": phone || "",
+        "Delivery & Billing Address *": address || "",
+        "Preferred Delivery Date": deliveryDate || "",
+        "Product Name": item.quantity > 1 ? `${item.product.name} (Qty: ${item.quantity})` : item.product.name,
+        "Category": item.product.category || "General",
+        "Price (INR)": item.product.price || 0,
+        "Original Price (INR)": item.product.originalPrice || item.product.price || 0,
+        "Discount %": discountPercent,
+        "Total Price": finalTotal || 0,
+        "Customer ID": customerId
+      };
+
+      // Output exact payload as required for verification
+      console.log("Submitting order payload to Sheet.best:", JSON.stringify(orderData));
+
+      const response = await fetch('https://api.sheetbest.com/sheets/38f7b6d0-0cfe-405c-be6a-51bd77c8973b', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(orderData),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to submit item: ${item.product.name}`);
+      }
+    }
+
+    // Create persistent record in LocalStorage for durability/logs
+    const orderRecord = {
+      orderId: customerId,
+      timestamp: new Date().toISOString(),
+      customer: { fullName, email, phone, address, deliveryDate },
+      items: cart.map(item => ({
+        productId: item.product.id,
+        name: item.product.name,
+        quantity: item.quantity,
+        price: item.product.price,
+      })),
+      total: finalTotal,
+      status: 'Confirmed',
+    };
+
+    const existingOrders = JSON.parse(localStorage.getItem('sparkle_orders') || '[]');
+    existingOrders.unshift(orderRecord);
+    localStorage.setItem('sparkle_orders', JSON.stringify(existingOrders));
+
+    // Clear the main application cart state
+    clearCart();
+    setCheckoutStep('success');
+  };
+
   const handleCheckoutSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!fullName || !email || !phone || !address) {
@@ -54,82 +136,68 @@ export default function CartDrawer({
       return;
     }
 
-    setSubmitting(true);
-    
-    try {
-      // Generate a Customer ID (a simple random string)
-      const generatedCustomerId = 'CUST-' + Math.floor(100000 + Math.random() * 900000);
-      setOrderId(generatedCustomerId);
+    // Use Math.random().toString(36).substr(2, 9) to generate a unique "Customer ID"
+    const generatedCustomerId = Math.random().toString(36).substr(2, 9);
+    setOrderId(generatedCustomerId);
 
-      // Submit each cart item individually to Sheet.best
-      for (let i = 0; i < cart.length; i++) {
-        const item = cart[i];
-        const sn = `P${String(i + 1).padStart(3, '0')}`;
-        
-        // Calculate item discount percentage
-        const discountPercent = item.product.originalPrice
-          ? Math.round(((item.product.originalPrice - item.product.price) / item.product.originalPrice) * 100)
-          : 0;
+    if (paymentMode === 'cod') {
+      setSubmitting(true);
+      try {
+        alert("Order Confirmed via COD");
+        await submitOrderToSheet(generatedCustomerId);
+      } catch (err) {
+        console.error('Checkout error:', err);
+        alert('There was an issue processing your order with our spreadsheet system. Please try again or contact support.');
+      } finally {
+        setSubmitting(false);
+      }
+    } else {
+      // Online payment via Razorpay
+      setSubmitting(true);
+      try {
+        const isLoaded = await loadRazorpayScript();
+        if (!isLoaded) {
+          alert("Failed to load Razorpay SDK. Please check your network connection or choose COD.");
+          setSubmitting(false);
+          return;
+        }
 
-        const orderData = {
-          "S/N": sn,
-          "Full Name": fullName || "",
-          "Email": email || "",
-          "Contact Number": phone || "",
-          "Delivery & Billing Address *": address || "",
-          "Preferred Delivery Date": deliveryDate || "",
-          "Product Name": item.quantity > 1 ? `${item.product.name} (Qty: ${item.quantity})` : item.product.name,
-          "Category": item.product.category || "General",
-          "Price (INR)": item.product.price || 0,
-          "Original Price (INR)": item.product.originalPrice || item.product.price || 0,
-          "Discount %": discountPercent,
-          "Total Price": finalTotal || 0,
-          "Customer ID": generatedCustomerId
+        const options = {
+          key: "rzp_test_T8Y0m2O70kOqYf",
+          amount: finalTotal * 100, // in paise
+          currency: "INR",
+          name: "Dharakshan Cracker Store",
+          description: "Festive Fireworks Order",
+          handler: async function (response: any) {
+            try {
+              alert("Payment Successful, Order Placed");
+              await submitOrderToSheet(generatedCustomerId);
+            } catch (err) {
+              console.error('Error submitting order post-payment:', err);
+              alert('Payment succeeded, but there was an issue saving your order. Please contact support with Customer ID: ' + generatedCustomerId);
+            }
+          },
+          prefill: {
+            name: fullName,
+            email: email,
+            contact: phone,
+          },
+          theme: {
+            color: "#7A0C1E",
+          },
         };
 
-        // Output exact payload as required for verification
-        console.log("Submitting order payload to Sheet.best:", JSON.stringify(orderData));
-
-        const response = await fetch('https://api.sheetbest.com/sheets/38f7b6d0-0cfe-405c-be6a-51bd77c8973b', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(orderData),
+        const rzp = new (window as any).Razorpay(options);
+        rzp.on('payment.failed', function (resp: any) {
+          alert("Payment failed: " + resp.error.description);
         });
-
-        if (!response.ok) {
-          throw new Error(`Failed to submit item: ${item.product.name}`);
-        }
+        rzp.open();
+        setSubmitting(false);
+      } catch (err) {
+        console.error('Razorpay initialization error:', err);
+        alert('Failed to initialize online payment modal. Please try again or choose COD.');
+        setSubmitting(false);
       }
-
-      // Create persistent record in LocalStorage for durability/logs
-      const orderRecord = {
-        orderId: generatedCustomerId,
-        timestamp: new Date().toISOString(),
-        customer: { fullName, email, phone, address, deliveryDate },
-        items: cart.map(item => ({
-          productId: item.product.id,
-          name: item.product.name,
-          quantity: item.quantity,
-          price: item.product.price,
-        })),
-        total: finalTotal,
-        status: 'Confirmed',
-      };
-
-      const existingOrders = JSON.parse(localStorage.getItem('sparkle_orders') || '[]');
-      existingOrders.unshift(orderRecord);
-      localStorage.setItem('sparkle_orders', JSON.stringify(existingOrders));
-
-      // Clear the main application cart state
-      clearCart();
-      setCheckoutStep('success');
-    } catch (err) {
-      console.error('Checkout error:', err);
-      alert('There was an issue processing your order with our spreadsheet system. Please try again or contact support.');
-    } finally {
-      setSubmitting(false);
     }
   };
 
@@ -385,6 +453,46 @@ export default function CartDrawer({
                     * Deliveries are timed carefully before Diwali (November 2026) to respect local municipal safety timings.
                   </p>
                 </div>
+
+                {/* Payment Mode Selection */}
+                <div className="space-y-2 pt-2">
+                  <label className="block text-xs font-bold text-slate-700">
+                    Payment Mode *
+                  </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <label className={`flex items-center gap-2.5 p-3 rounded-xl border cursor-pointer transition-all ${paymentMode === 'cod' ? 'border-[#7A0C1E] bg-[#7A0C1E]/5' : 'border-slate-200 bg-white hover:bg-slate-50'}`}>
+                      <input
+                        type="radio"
+                        id="payment-cod"
+                        name="payment-mode"
+                        value="cod"
+                        checked={paymentMode === 'cod'}
+                        onChange={() => setPaymentMode('cod')}
+                        className="w-4 h-4 text-[#7A0C1E] focus:ring-[#7A0C1E]"
+                      />
+                      <div className="text-left">
+                        <span className="block text-xs font-bold text-slate-800">COD</span>
+                        <span className="block text-[9px] text-slate-500">Pay cash or UPI at delivery</span>
+                      </div>
+                    </label>
+
+                    <label className={`flex items-center gap-2.5 p-3 rounded-xl border cursor-pointer transition-all ${paymentMode === 'online' ? 'border-[#7A0C1E] bg-[#7A0C1E]/5' : 'border-slate-200 bg-white hover:bg-slate-50'}`}>
+                      <input
+                        type="radio"
+                        id="payment-online"
+                        name="payment-mode"
+                        value="online"
+                        checked={paymentMode === 'online'}
+                        onChange={() => setPaymentMode('online')}
+                        className="w-4 h-4 text-[#7A0C1E] focus:ring-[#7A0C1E]"
+                      />
+                      <div className="text-left">
+                        <span className="block text-xs font-bold text-slate-800">Online</span>
+                        <span className="block text-[9px] text-slate-500">Card, UPI, Netbanking</span>
+                      </div>
+                    </label>
+                  </div>
+                </div>
               </div>
 
               {/* Order Summary Miniature */}
@@ -394,7 +502,7 @@ export default function CartDrawer({
                   <span className="text-[#7A0C1E] font-mono font-bold">₹{finalTotal}</span>
                 </div>
                 <p className="text-[10px] text-slate-500 italic">
-                  Payment Mode: <b>Cash on Delivery (COD)</b> / <b>UPI on Delivery</b>. Fully compliant with regional firework transportation policies.
+                  Payment Mode: <b>{paymentMode === 'cod' ? 'Cash on Delivery (COD)' : 'Online Payment (Razorpay)'}</b>. Fully compliant with regional firework transportation policies.
                 </p>
               </div>
 
@@ -414,7 +522,7 @@ export default function CartDrawer({
                   {submitting ? (
                     <span className="w-4 h-4 border-2 border-[#D4AF37] border-t-transparent rounded-full animate-spin"></span>
                   ) : (
-                    <span>Confirm Order (COD)</span>
+                    <span>{paymentMode === 'cod' ? 'Confirm Order (COD)' : 'Pay Now & Confirm'}</span>
                   )}
                 </button>
               </div>
