@@ -56,17 +56,56 @@ export default function CartDrawer({
 
     setSubmitting(true);
     
-    // Asynchronous API Simulation (or Sheet.best integration if URL configured in the future)
     try {
-      // 1.2s realistic loading transition
-      await new Promise((resolve) => setTimeout(resolve, 1200));
-      
-      const generatedOrderId = 'SD-' + Math.floor(100000 + Math.random() * 900000);
-      setOrderId(generatedOrderId);
+      // Generate a Customer ID (a simple random string)
+      const generatedCustomerId = 'CUST-' + Math.floor(100000 + Math.random() * 900000);
+      setOrderId(generatedCustomerId);
 
-      // Create persistent record in LocalStorage for durability
+      // Submit each cart item individually to Sheet.best
+      for (let i = 0; i < cart.length; i++) {
+        const item = cart[i];
+        const sn = `P${String(i + 1).padStart(3, '0')}`;
+        
+        // Calculate item discount percentage
+        const discountPercent = item.product.originalPrice
+          ? Math.round(((item.product.originalPrice - item.product.price) / item.product.originalPrice) * 100)
+          : 0;
+
+        const orderData = {
+          "S/N": sn,
+          "Full Name": fullName || "",
+          "Email": email || "",
+          "Contact Number": phone || "",
+          "Delivery & Billing Address *": address || "",
+          "Preferred Delivery Date": deliveryDate || "",
+          "Product Name": item.quantity > 1 ? `${item.product.name} (Qty: ${item.quantity})` : item.product.name,
+          "Category": item.product.category || "General",
+          "Price (INR)": item.product.price || 0,
+          "Original Price (INR)": item.product.originalPrice || item.product.price || 0,
+          "Discount %": discountPercent,
+          "Total Price": finalTotal || 0,
+          "Customer ID": generatedCustomerId
+        };
+
+        // Output exact payload as required for verification
+        console.log("Submitting order payload to Sheet.best:", JSON.stringify(orderData));
+
+        const response = await fetch('https://api.sheetbest.com/sheets/38f7b6d0-0cfe-405c-be6a-51bd77c8973b', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(orderData),
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to submit item: ${item.product.name}`);
+        }
+      }
+
+      // Create persistent record in LocalStorage for durability/logs
       const orderRecord = {
-        orderId: generatedOrderId,
+        orderId: generatedCustomerId,
         timestamp: new Date().toISOString(),
         customer: { fullName, email, phone, address, deliveryDate },
         items: cart.map(item => ({
@@ -88,6 +127,7 @@ export default function CartDrawer({
       setCheckoutStep('success');
     } catch (err) {
       console.error('Checkout error:', err);
+      alert('There was an issue processing your order with our spreadsheet system. Please try again or contact support.');
     } finally {
       setSubmitting(false);
     }

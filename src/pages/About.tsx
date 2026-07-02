@@ -35,7 +35,7 @@ export default function About() {
       <div className="bg-[#7A0C1E] text-white py-12 px-6 text-center border-b border-[#D4AF37]/30">
         <div className="max-w-3xl mx-auto">
           <span className="text-[#D4AF37] text-xs font-mono font-bold tracking-widest uppercase block mb-1">
-            ABOUT SPARKLE DIWALI
+            ABOUT DHARAKSHAN CRACKER STORE
           </span>
           <h1 className="font-sans font-extrabold text-3xl md:text-4xl text-white">
             Our Heritage & Commitment
