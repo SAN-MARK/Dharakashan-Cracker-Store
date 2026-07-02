@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { X, Plus, Minus, Trash2, CheckCircle, Flame, ShieldAlert, ShoppingBag } from 'lucide-react';
+import { X, Plus, Minus, Trash2, CheckCircle, Flame, ShieldAlert, ShoppingBag, MessageCircle } from 'lucide-react';
 import { CartItem, Product } from '../types';
+import { getItemUnitPrice, getItemTotalPrice } from '../lib/pricing';
 
 interface CartDrawerProps {
   isOpen: boolean;
@@ -52,15 +53,29 @@ export default function CartDrawer({
 
   if (!isOpen) return null;
 
-  const subtotal = cart.reduce((total, item) => total + item.product.price * item.quantity, 0);
+  const subtotal = cart.reduce((total, item) => total + getItemTotalPrice(item.product, item.quantity), 0);
   const discount = cart.reduce((total, item) => {
-    if (item.product.originalPrice) {
-      return total + (item.product.originalPrice - item.product.price) * item.quantity;
-    }
-    return total;
+    const basePrice = item.product.originalPrice || item.product.price;
+    const actualPrice = getItemUnitPrice(item.product, item.quantity);
+    return total + (basePrice - actualPrice) * item.quantity;
   }, 0);
   const shipping = subtotal > 1000 ? 0 : subtotal === 0 ? 0 : 150;
   const finalTotal = subtotal + shipping;
+
+  const handleWhatsAppCartEnquiry = () => {
+    const waNumber = import.meta.env.VITE_WHATSAPP_NUMBER || '919840012345';
+    const itemsList = cart.map(item => {
+      const unitPrice = getItemUnitPrice(item.product, item.quantity);
+      const totalItemPrice = unitPrice * item.quantity;
+      const isWholesale = item.quantity >= 10 ? ' (Wholesale Apply)' : '';
+      return `- ${item.quantity}x ${item.product.name} (₹${totalItemPrice}${isWholesale})`;
+    }).join('\n');
+
+    const message = encodeURIComponent(
+      `Hello Dharakshan Cracker Store,\n\nI am interested in placing an enquiry for the following crackers in my bag:\n\n${itemsList}\n\n*Cart Total:* ₹${subtotal}\n*Delivery Fee:* ${shipping === 0 ? 'Free' : `₹${shipping}`}\n*Grand Total:* ₹${finalTotal}\n\nPlease confirm stock availability and custom packaging delivery.`
+    );
+    window.open(`https://wa.me/${waNumber}?text=${message}`, '_blank');
+  };
 
   const submitOrderToSheet = async (customerId: string) => {
     // Submit each cart item individually to Sheet.best
@@ -303,11 +318,16 @@ export default function CartDrawer({
                             <div className="flex items-center gap-2.5">
                               <div className="text-right">
                                 <span className="text-xs font-bold text-[#7A0C1E] block font-mono">
-                                  ₹{item.product.price * item.quantity}
+                                  ₹{getItemTotalPrice(item.product, item.quantity)}
                                 </span>
-                                {item.product.originalPrice && (
+                                {item.quantity >= 10 && (
+                                  <span className="text-[9px] text-emerald-600 font-extrabold block">
+                                    15% Wholesale Apply
+                                  </span>
+                                )}
+                                {(item.product.originalPrice || item.quantity >= 10) && (
                                   <span className="text-[9px] text-slate-400 line-through block font-mono">
-                                    ₹{item.product.originalPrice * item.quantity}
+                                    ₹{(item.product.originalPrice || item.product.price) * item.quantity}
                                   </span>
                                 )}
                               </div>
@@ -579,11 +599,21 @@ export default function CartDrawer({
 
         {/* Footer actions for initial cart view */}
         {checkoutStep === 'cart' && cart.length > 0 && (
-          <div className="bg-white border-t border-slate-200 p-5 space-y-3 shadow-lg">
+          <div className="bg-white border-t border-slate-200 p-5 space-y-3 shadow-lg text-left">
             <div className="flex justify-between items-center text-xs text-slate-600">
               <span>Items Total:</span>
               <span className="font-mono font-bold text-slate-800 text-sm">₹{subtotal}</span>
             </div>
+            
+            {/* WhatsApp Enquiry Button */}
+            <button
+              onClick={handleWhatsAppCartEnquiry}
+              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-sans font-bold text-xs py-2.5 rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <MessageCircle className="w-4 h-4 fill-current" />
+              <span>📩 Enquire Cart on WhatsApp</span>
+            </button>
+
             <div className="flex gap-2.5">
               <button
                 onClick={clearCart}

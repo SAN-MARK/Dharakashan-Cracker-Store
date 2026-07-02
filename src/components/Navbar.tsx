@@ -41,6 +41,7 @@ export default function Navbar({
     { id: 'home', label: 'Home' },
     { id: 'about', label: 'About' },
     { id: 'shop', label: 'Shop' },
+    { id: 'combo', label: 'Build Combo 🎁' },
     { id: 'contact', label: 'Contact' },
   ];
 

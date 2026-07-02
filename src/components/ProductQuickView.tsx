@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { X, Star, ShoppingBag, ShieldCheck, Flame, Info } from 'lucide-react';
+import { X, Star, ShoppingBag, ShieldCheck, Flame, Info, MessageCircle } from 'lucide-react';
 import { Product } from '../types';
+import { getItemUnitPrice, getItemTotalPrice, BULK_THRESHOLD, BULK_DISCOUNT_PERCENT } from '../lib/pricing';
 
 interface ProductQuickViewProps {
   product: Product | null;
@@ -24,6 +25,18 @@ export default function ProductQuickView({
   const handleAddToCartClick = () => {
     addToCart(product, quantity);
     onClose();
+  };
+
+  // Wholesale/bulk pricing calculations
+  const unitPrice = getItemUnitPrice(product, quantity);
+  const totalPrice = getItemTotalPrice(product, quantity);
+  const isBulkApplied = quantity >= BULK_THRESHOLD;
+
+  // WhatsApp enquiry handler
+  const handleWhatsAppEnquiry = () => {
+    const waNumber = import.meta.env.VITE_WHATSAPP_NUMBER || '919840012345';
+    const message = encodeURIComponent(`Hello Dharakshan Cracker Store, I would like to enquire about: ${product.name} (Qty: ${quantity}). Unit Price: ₹${unitPrice}, Total: ₹${totalPrice}. Please share availability.`);
+    window.open(`https://wa.me/${waNumber}?text=${message}`, '_blank');
   };
 
   return (
@@ -88,40 +101,54 @@ export default function ProductQuickView({
           </div>
 
           {/* Pricing Box */}
-          <div className="bg-white rounded-2xl p-3.5 border border-[#D4AF37]/15 flex items-center justify-between">
-            <div>
-              <span className="text-slate-400 text-[10px] uppercase font-bold tracking-wider block">Special Deepavali Offer</span>
-              <div className="flex items-baseline gap-1.5 mt-0.5">
-                <span className="text-xl font-extrabold text-[#7A0C1E] font-mono">
-                  ₹{product.price}
-                </span>
-                {product.originalPrice && (
-                  <span className="text-sm text-slate-400 line-through font-mono">
-                    ₹{product.originalPrice}
+          <div className="bg-white rounded-2xl p-3.5 border border-[#D4AF37]/15 space-y-2">
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="text-slate-400 text-[10px] uppercase font-bold tracking-wider block">Special Deepavali Offer</span>
+                <div className="flex items-baseline gap-1.5 mt-0.5">
+                  <span className="text-xl font-extrabold text-[#7A0C1E] font-mono">
+                    ₹{unitPrice}
                   </span>
-                )}
-                {product.originalPrice && (
-                  <span className="text-[10px] text-emerald-600 font-bold ml-1">
-                    Save {Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}%
-                  </span>
-                )}
+                  {(product.originalPrice || isBulkApplied) && (
+                    <span className="text-sm text-slate-400 line-through font-mono">
+                      ₹{isBulkApplied ? product.price : product.originalPrice}
+                    </span>
+                  )}
+                  {isBulkApplied ? (
+                    <span className="text-[10px] bg-emerald-500 text-white font-bold px-1.5 py-0.5 rounded ml-1">
+                      {BULK_DISCOUNT_PERCENT}% Bulk Savings Applied!
+                    </span>
+                  ) : product.originalPrice ? (
+                    <span className="text-[10px] text-emerald-600 font-bold ml-1">
+                      Save {Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}%
+                    </span>
+                  ) : null}
+                </div>
               </div>
+              
+              {/* Decibel / Sound Indicator */}
+              {product.soundLevel && (
+                <div className="text-right">
+                  <span className="text-slate-400 text-[10px] uppercase font-bold tracking-wider block">Noise Level</span>
+                  <span className={`text-[11px] font-bold py-0.5 px-2 rounded-full inline-block mt-1 ${
+                    product.soundLevel === 'Silent' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
+                    product.soundLevel === 'Low' ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' :
+                    product.soundLevel === 'Medium' ? 'bg-amber-100 text-amber-800 border border-amber-300' :
+                    'bg-red-100 text-red-800 border border-red-300'
+                  }`}>
+                    {product.soundLevel}
+                  </span>
+                </div>
+              )}
             </div>
-            
-            {/* Decibel / Sound Indicator */}
-            {product.soundLevel && (
-              <div className="text-right">
-                <span className="text-slate-400 text-[10px] uppercase font-bold tracking-wider block">Noise Level</span>
-                <span className={`text-[11px] font-bold py-0.5 px-2 rounded-full inline-block mt-1 ${
-                  product.soundLevel === 'Silent' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
-                  product.soundLevel === 'Low' ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' :
-                  product.soundLevel === 'Medium' ? 'bg-amber-100 text-amber-800 border border-amber-300' :
-                  'bg-red-100 text-red-800 border border-red-300'
-                }`}>
-                  {product.soundLevel}
-                </span>
-              </div>
-            )}
+
+            {/* Wholesale Pricing Banner */}
+            <div className="bg-[#7A0C1E]/5 rounded-xl p-2 text-[10.5px] border border-[#7A0C1E]/10 text-[#7A0C1E] flex items-center gap-1.5 font-medium">
+              <span className="text-base">💡</span>
+              <span>
+                <b>Wholesale Discount:</b> Buy {BULK_THRESHOLD}+ units of this product to get <b>{BULK_DISCOUNT_PERCENT}% OFF</b> automatically! (Only ₹{Math.round(product.price * (1 - BULK_DISCOUNT_PERCENT / 100))} each)
+              </span>
+            </div>
           </div>
 
           {/* Detailed Description */}
@@ -147,45 +174,56 @@ export default function ProductQuickView({
           </div>
 
           {/* Cart Actions */}
-          <div className="pt-2 flex items-center gap-3">
-            {isLoggedIn ? (
-              <>
-                {/* Quantity Selector */}
-                <div className="flex items-center border border-slate-300 rounded-xl bg-white overflow-hidden h-11 shadow-xs">
-                  <button
-                    onClick={() => setQuantity(prev => Math.max(1, prev - 1))}
-                    className="px-3 hover:bg-slate-100 active:bg-slate-200 text-slate-600 font-bold transition-all"
-                  >
-                    -
-                  </button>
-                  <span className="px-3 text-sm font-bold text-slate-800 font-mono w-8 text-center">
-                    {quantity}
-                  </span>
-                  <button
-                    onClick={() => setQuantity(prev => prev + 1)}
-                    className="px-3 hover:bg-slate-100 active:bg-slate-200 text-slate-600 font-bold transition-all"
-                  >
-                    +
-                  </button>
-                </div>
+          <div className="pt-2 flex flex-col gap-3">
+            <div className="flex items-center gap-3">
+              {isLoggedIn ? (
+                <>
+                  {/* Quantity Selector */}
+                  <div className="flex items-center border border-slate-300 rounded-xl bg-white overflow-hidden h-11 shadow-xs">
+                    <button
+                      onClick={() => setQuantity(prev => Math.max(1, prev - 1))}
+                      className="px-3 hover:bg-slate-100 active:bg-slate-200 text-slate-600 font-bold transition-all"
+                    >
+                      -
+                    </button>
+                    <span className="px-3 text-sm font-bold text-slate-800 font-mono w-8 text-center">
+                      {quantity}
+                    </span>
+                    <button
+                      onClick={() => setQuantity(prev => prev + 1)}
+                      className="px-3 hover:bg-slate-100 active:bg-slate-200 text-slate-600 font-bold transition-all"
+                    >
+                      +
+                    </button>
+                  </div>
 
+                  <button
+                    onClick={handleAddToCartClick}
+                    className="flex-1 bg-[#7A0C1E] hover:bg-[#911327] text-[#D4AF37] hover:text-white font-sans font-bold text-xs sm:text-sm h-11 rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-1.5 active:scale-98 cursor-pointer"
+                  >
+                    <ShoppingBag className="w-4 h-4" />
+                    <span>Add ₹{totalPrice} to Festive Bag</span>
+                  </button>
+                </>
+              ) : (
                 <button
-                  onClick={handleAddToCartClick}
-                  className="flex-1 bg-[#7A0C1E] hover:bg-[#911327] text-[#D4AF37] hover:text-white font-sans font-bold text-xs sm:text-sm h-11 rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-1.5 active:scale-98 cursor-pointer"
+                  onClick={onLoginRedirect}
+                  className="w-full bg-[#7A0C1E] hover:bg-[#911327] text-[#D4AF37] hover:text-white font-sans font-bold text-xs sm:text-sm h-11 rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-1.5 active:scale-98 cursor-pointer"
                 >
                   <ShoppingBag className="w-4 h-4" />
-                  <span>Add ₹{product.price * quantity} to Festive Bag</span>
+                  <span>Login & Add to Cart (₹{totalPrice})</span>
                 </button>
-              </>
-            ) : (
-              <button
-                onClick={onLoginRedirect}
-                className="w-full bg-[#7A0C1E] hover:bg-[#911327] text-[#D4AF37] hover:text-white font-sans font-bold text-xs sm:text-sm h-11 rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-1.5 active:scale-98 cursor-pointer"
-              >
-                <ShoppingBag className="w-4 h-4" />
-                <span>Login & Add to Cart</span>
-              </button>
-            )}
+              )}
+            </div>
+
+            {/* WhatsApp Enquiry Button */}
+            <button
+              onClick={handleWhatsAppEnquiry}
+              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-sans font-bold text-xs sm:text-sm h-11 rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 active:scale-98 cursor-pointer"
+            >
+              <MessageCircle className="w-4.5 h-4.5 fill-current" />
+              <span>Enquire on WhatsApp (Qty: {quantity})</span>
+            </button>
           </div>
         </div>
       </div>

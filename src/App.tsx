@@ -11,6 +11,7 @@ import About from './pages/About';
 import Shop from './pages/Shop';
 import Login from './pages/Login';
 import Contact from './pages/Contact';
+import ComboBuilder from './pages/ComboBuilder';
 
 // Lucide Icons for Sticky Bottom Bar
 import { Home as HomeIcon, ShoppingBag, Info, Phone, MessageSquare } from 'lucide-react';
@@ -200,6 +201,14 @@ export default function App() {
           )}
 
           {currentPage === 'contact' && <Contact />}
+
+          {currentPage === 'combo' && (
+            <ComboBuilder
+              addToCart={addToCart}
+              isLoggedIn={session.isLoggedIn}
+              setCurrentPage={handleNavigatePage}
+            />
+          )}
         </main>
 
         {/* Universal Footer Component */}
