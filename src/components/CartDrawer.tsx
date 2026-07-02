@@ -64,7 +64,7 @@ export default function CartDrawer({
   const finalTotal = subtotal + shipping;
 
   const handleWhatsAppCartEnquiry = () => {
-    const waNumber = import.meta.env.VITE_WHATSAPP_NUMBER || '919840012345';
+    const waNumber = import.meta.env.VITE_WHATSAPP_NUMBER || '918668045519';
     const itemsList = cart.map(item => {
       const unitPrice = getItemUnitPrice(item.product, item.quantity);
       const totalItemPrice = unitPrice * item.quantity;

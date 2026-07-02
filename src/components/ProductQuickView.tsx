@@ -34,7 +34,7 @@ export default function ProductQuickView({
 
   // WhatsApp enquiry handler
   const handleWhatsAppEnquiry = () => {
-    const waNumber = import.meta.env.VITE_WHATSAPP_NUMBER || '919840012345';
+    const waNumber = import.meta.env.VITE_WHATSAPP_NUMBER || '918668045519';
     const message = encodeURIComponent(`Hello Dharakshan Cracker Store, I would like to enquire about: ${product.name} (Qty: ${quantity}). Unit Price: ₹${unitPrice}, Total: ₹${totalPrice}. Please share availability.`);
     window.open(`https://wa.me/${waNumber}?text=${message}`, '_blank');
   };
