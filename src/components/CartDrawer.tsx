@@ -540,20 +540,9 @@ export default function CartDrawer({
               <p className="text-sm font-semibold text-[#7A0C1E] mt-1">
                 Order Placed Successfully!
               </p>
-
-              {/* SCREENSHOT TRACKING NOTICE */}
-              <div className="bg-amber-50 border border-[#D4AF37]/50 rounded-xl p-3.5 my-3 text-left space-y-1 w-full" id="screenshot-tracking-notice">
-                <span className="text-[10px] uppercase font-extrabold text-amber-800 tracking-wider flex items-center gap-1">
-                  📸 IMPORTANT: TAKE A SCREENSHOT!
-                </span>
-                <p className="text-[11px] text-slate-700 leading-relaxed">
-                  Please screenshot or write down this receipt. Your unique <b>Customer ID</b> is <span className="font-mono font-bold text-[#7A0C1E] bg-white px-1.5 py-0.5 rounded border border-amber-200 select-all">{orderId}</span>. Use this to monitor your cracker dispatch live on the <b>Track Order</b> page.
-                </p>
-              </div>
-
-              <div className="bg-white rounded-xl p-4 border border-[#D4AF37]/20 shadow-xs my-3 w-full space-y-2.5 text-left">
+              <div className="bg-white rounded-xl p-4 border border-[#D4AF37]/20 shadow-xs my-5 w-full space-y-2.5 text-left">
                 <div className="flex justify-between text-xs">
-                  <span className="text-slate-500">Customer ID:</span>
+                  <span className="text-slate-500">Order ID:</span>
                   <span className="font-mono font-bold text-slate-800">{orderId}</span>
                 </div>
                 <div className="flex justify-between text-xs">

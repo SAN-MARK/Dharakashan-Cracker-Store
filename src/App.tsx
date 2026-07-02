@@ -11,10 +11,9 @@ import About from './pages/About';
 import Shop from './pages/Shop';
 import Login from './pages/Login';
 import Contact from './pages/Contact';
-import Tracking from './pages/Tracking';
 
 // Lucide Icons for Sticky Bottom Bar
-import { Home as HomeIcon, ShoppingBag, Info, Phone, MessageSquare, Package } from 'lucide-react';
+import { Home as HomeIcon, ShoppingBag, Info, Phone, MessageSquare } from 'lucide-react';
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState<Page>('home');
@@ -201,8 +200,6 @@ export default function App() {
           )}
 
           {currentPage === 'contact' && <Contact />}
-
-          {currentPage === 'tracking' && <Tracking />}
         </main>
 
         {/* Universal Footer Component */}
@@ -217,7 +214,6 @@ export default function App() {
           {[
             { id: 'home', label: 'Home', icon: <HomeIcon className="w-4.5 h-4.5" /> },
             { id: 'shop', label: 'Shop', icon: <ShoppingBag className="w-4.5 h-4.5" /> },
-            { id: 'tracking', label: 'Track', icon: <Package className="w-4.5 h-4.5" /> },
             { id: 'about', label: 'About', icon: <Info className="w-4.5 h-4.5" /> },
             { id: 'contact', label: 'Contact', icon: <Phone className="w-4.5 h-4.5" /> },
           ].map((tab) => (
