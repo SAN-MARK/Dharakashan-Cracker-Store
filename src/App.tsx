@@ -4,6 +4,7 @@ import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import CartDrawer from './components/CartDrawer';
 import ProductQuickView from './components/ProductQuickView';
+import { Language } from './lib/translations';
 
 // Pages
 import Home from './pages/Home';
@@ -12,6 +13,7 @@ import Shop from './pages/Shop';
 import Login from './pages/Login';
 import Contact from './pages/Contact';
 import ComboBuilder from './pages/ComboBuilder';
+import BulkOrders from './pages/BulkOrders';
 
 // Lucide Icons for Sticky Bottom Bar
 import { Home as HomeIcon, ShoppingBag, Info, Phone, MessageSquare } from 'lucide-react';
@@ -21,6 +23,16 @@ export default function App() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+
+  // Global Language State
+  const [language, setLanguageState] = useState<Language>(() => {
+    return (localStorage.getItem('app_lang') as Language) || 'en';
+  });
+
+  const setLanguage = (lang: Language) => {
+    setLanguageState(lang);
+    localStorage.setItem('app_lang', lang);
+  };
 
   // Authentication State
   const [session, setSession] = useState<UserSession>({
@@ -169,6 +181,8 @@ export default function App() {
           setIsCartOpen={setIsCartOpen}
           session={session}
           handleLogout={handleLogout}
+          language={language}
+          setLanguage={setLanguage}
         />
 
         {/* Dynamic Main Body Content */}
@@ -180,10 +194,11 @@ export default function App() {
               addToCart={addToCart}
               setSelectedProduct={setSelectedProduct}
               isLoggedIn={session.isLoggedIn}
+              language={language}
             />
           )}
 
-          {currentPage === 'about' && <About />}
+          {currentPage === 'about' && <About language={language} />}
 
           {currentPage === 'shop' && (
             <Shop
@@ -193,6 +208,7 @@ export default function App() {
               setSelectedProduct={setSelectedProduct}
               isLoggedIn={session.isLoggedIn}
               setCurrentPage={handleNavigatePage}
+              language={language}
             />
           )}
 
@@ -207,7 +223,12 @@ export default function App() {
               addToCart={addToCart}
               isLoggedIn={session.isLoggedIn}
               setCurrentPage={handleNavigatePage}
+              language={language}
             />
+          )}
+
+          {currentPage === 'bulk' && (
+            <BulkOrders language={language} />
           )}
         </main>
 

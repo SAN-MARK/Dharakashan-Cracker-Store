@@ -3,11 +3,13 @@ import { Gift, Plus, Minus, ShoppingBag, Info, Check, Package, Sparkles } from '
 import { Product } from '../types';
 import { PRODUCTS } from '../data/products';
 import { getItemUnitPrice } from '../lib/pricing';
+import { Language } from '../lib/translations';
 
 interface ComboBuilderProps {
   addToCart: (product: Product, quantity: number) => void;
   isLoggedIn: boolean;
   setCurrentPage: (page: any) => void;
+  language?: Language;
 }
 
 const BOX_OPTIONS = [
@@ -16,7 +18,7 @@ const BOX_OPTIONS = [
   { id: 'box-grand', name: 'Royal Emperor Gold Box', price: 499, description: 'Heavy, royal metal-accented keepsake box with gold-foil embossed greetings.', capacity: 'Holds up to 50 items' }
 ];
 
-export default function ComboBuilder({ addToCart, isLoggedIn, setCurrentPage }: ComboBuilderProps) {
+export default function ComboBuilder({ addToCart, isLoggedIn, setCurrentPage, language = 'en' }: ComboBuilderProps) {
   const [selectedBox, setSelectedBox] = useState(BOX_OPTIONS[0]);
   const [comboName, setComboName] = useState("My Festive Dhamaka");
   const [selectedItems, setSelectedItems] = useState<{ [productId: string]: number }>({});

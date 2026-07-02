@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Menu, X, ShoppingBag, User, LogOut } from 'lucide-react';
+import { Menu, X, ShoppingBag, User, LogOut, Globe } from 'lucide-react';
 import { Page, CartItem, UserSession } from '../types';
+import { translate, Language } from '../lib/translations';
 
 interface NavbarProps {
   currentPage: Page;
@@ -9,6 +10,8 @@ interface NavbarProps {
   setIsCartOpen: (open: boolean) => void;
   session: UserSession;
   handleLogout: () => void;
+  language: Language;
+  setLanguage: (lang: Language) => void;
 }
 
 export default function Navbar({
@@ -18,6 +21,8 @@ export default function Navbar({
   setIsCartOpen,
   session,
   handleLogout,
+  language,
+  setLanguage,
 }: NavbarProps) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -38,11 +43,12 @@ export default function Navbar({
   const totalCartItems = cart.reduce((total, item) => total + item.quantity, 0);
 
   const navLinks: { id: Page; label: string }[] = [
-    { id: 'home', label: 'Home' },
-    { id: 'about', label: 'About' },
-    { id: 'shop', label: 'Shop' },
-    { id: 'combo', label: 'Build Combo 🎁' },
-    { id: 'contact', label: 'Contact' },
+    { id: 'home', label: translate('nav.home', language) },
+    { id: 'about', label: translate('nav.about', language) },
+    { id: 'shop', label: translate('nav.shop', language) },
+    { id: 'combo', label: translate('nav.combo', language) },
+    { id: 'bulk', label: translate('nav.bulk', language) },
+    { id: 'contact', label: translate('nav.contact', language) },
   ];
 
   return (
@@ -112,6 +118,17 @@ export default function Navbar({
 
         {/* Right: Cart, Login, Hamburger */}
         <div className="flex items-center gap-3.5" id="navbar-actions">
+          {/* Language Switcher Button */}
+          <button
+            onClick={() => setLanguage(language === 'en' ? 'ta' : 'en')}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-white/10 hover:bg-white/20 border border-white/10 rounded-full text-xs font-sans font-bold transition-all cursor-pointer text-[#D4AF37] hover:text-white"
+            title="Change Language / மொழியை மாற்றவும்"
+            id="language-toggle-btn"
+          >
+            <Globe className="w-3.5 h-3.5 text-[#D4AF37]" />
+            <span>{language === 'en' ? 'தமிழ்' : 'English'}</span>
+          </button>
+
           {/* Cart button */}
           <button
             onClick={() => setIsCartOpen(true)}
@@ -199,6 +216,18 @@ export default function Navbar({
               {currentPage === link.id && <span className="text-sm">✦</span>}
             </button>
           ))}
+
+          {/* Mobile Language Selector */}
+          <div className="flex items-center justify-between py-2 border-b border-white/5">
+            <span className="text-white/70 text-sm font-sans">Language / மொழி:</span>
+            <button
+              onClick={() => setLanguage(language === 'en' ? 'ta' : 'en')}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-white/10 border border-[#D4AF37]/40 rounded-lg text-xs font-sans font-bold text-[#D4AF37]"
+            >
+              <Globe className="w-3.5 h-3.5" />
+              <span>{language === 'en' ? 'தமிழ் (Tamil)' : 'English'}</span>
+            </button>
+          </div>
 
           {session.isLoggedIn && (
             <div className="flex items-center gap-3 bg-white/5 p-3 rounded-xl border border-white/10 mt-2">

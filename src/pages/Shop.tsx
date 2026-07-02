@@ -3,6 +3,7 @@ import { Filter, Star, ShoppingBag, SlidersHorizontal, Search, ArrowUpDown, Refr
 import { Product, Page } from '../types';
 import { PRODUCTS, CATEGORIES } from '../data/products';
 import DecorativeBorder from '../components/DecorativeBorder';
+import { translate, Language } from '../lib/translations';
 
 interface ShopProps {
   searchFilters: { category: string; priceRange: string; searchTerm: string };
@@ -11,6 +12,7 @@ interface ShopProps {
   setSelectedProduct: (product: Product | null) => void;
   isLoggedIn: boolean;
   setCurrentPage: (page: Page) => void;
+  language: Language;
 }
 
 export default function Shop({
@@ -20,6 +22,7 @@ export default function Shop({
   setSelectedProduct,
   isLoggedIn,
   setCurrentPage,
+  language,
 }: ShopProps) {
   // Sync page state with global filters passed from home
   const [selectedCategory, setSelectedCategory] = useState(searchFilters.category || 'all');

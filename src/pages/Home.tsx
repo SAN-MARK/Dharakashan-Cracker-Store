@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { Search, ChevronRight, Award, Truck, ShieldCheck, RefreshCw, Star, ShoppingBag, Eye } from 'lucide-react';
+import { Search, ChevronRight, Award, Truck, ShieldCheck, RefreshCw, Star, ShoppingBag, Eye, MapPin, CheckCircle, HelpCircle } from 'lucide-react';
 import { Page, Product } from '../types';
 import { PRODUCTS } from '../data/products';
 import DecorativeBorder, { FairyLights } from '../components/DecorativeBorder';
+import { translate, Language } from '../lib/translations';
+import { dbService } from '../lib/supabase';
 
 // Import the generated images
 import heroBanner from '../assets/images/hero_banner_diwali_1782969842884.jpg';
@@ -19,6 +21,7 @@ interface HomeProps {
   addToCart: (product: Product) => void;
   setSelectedProduct: (product: Product | null) => void;
   isLoggedIn: boolean;
+  language: Language;
 }
 
 export default function Home({
@@ -27,11 +30,26 @@ export default function Home({
   addToCart,
   setSelectedProduct,
   isLoggedIn,
+  language,
 }: HomeProps) {
   // Local Search / Filter states
   const [searchTerm, setSearchTerm] = useState('');
   const [category, setCategory] = useState('all');
   const [priceRange, setPriceRange] = useState('all');
+
+  // Delivery checker states
+  const [deliveryQuery, setDeliveryQuery] = useState('');
+  const [deliveryResult, setDeliveryResult] = useState<any>(null);
+  const [isCheckingDelivery, setIsCheckingDelivery] = useState(false);
+
+  const handleDeliveryCheck = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!deliveryQuery.trim()) return;
+    setIsCheckingDelivery(true);
+    const result = await dbService.checkDelivery(deliveryQuery);
+    setDeliveryResult(result ? result : 'not_available');
+    setIsCheckingDelivery(false);
+  };
 
   // Popular category items
   const POPULAR_CATEGORIES = [
@@ -129,14 +147,14 @@ export default function Home({
 
         {/* Hero content */}
         <div className="relative z-10 text-center max-w-2xl px-5 text-white flex flex-col items-center">
-          <div className="bg-[#D4AF37]/25 border border-[#D4AF37]/50 text-[#D4AF37] px-3.5 py-1 rounded-full text-[10px] md:text-xs font-mono font-bold tracking-widest uppercase mb-3.5 animate-pulse">
-            ✨ Shubh Deepavali Celebrations ✨
+          <div className="flex items-center gap-2 bg-[#D4AF37]/25 border border-[#D4AF37]/50 text-[#D4AF37] px-3.5 py-1 rounded-full text-[10px] md:text-xs font-mono font-bold tracking-widest uppercase mb-3.5 animate-pulse">
+            <span>✨ {language === 'en' ? 'Direct from Sivakasi' : 'சிவகாசியில் இருந்து நேரடித் தயாரிப்பு'} ✨</span>
           </div>
-          <h1 className="font-sans font-extrabold text-3xl md:text-5xl leading-tight tracking-tight text-white uppercase drop-shadow-md">
-            Light Up This <span className="text-[#D4AF37] drop-shadow-[0_2px_10px_rgba(212,175,55,0.3)]">Diwali</span>
+          <h1 className="font-sans font-black text-3xl md:text-5xl leading-tight tracking-tight text-white uppercase drop-shadow-md">
+            {language === 'en' ? 'Light Up Your ' : 'உங்கள் '}<span className="text-[#D4AF37] drop-shadow-[0_2px_10px_rgba(212,175,55,0.3)]">{language === 'en' ? 'Celebrations' : 'கொண்டாட்டங்களை'}</span>{language === 'en' ? ' Safely' : ' பாதுகாப்பாக மிளிரச் செய்யுங்கள்'}
           </h1>
           <p className="mt-3 text-xs md:text-sm text-[#FFF8F0]/85 font-sans leading-relaxed max-w-md md:max-w-xl font-light">
-            Sivakasi's premium green firecrackers crafted under 100% PESO-certified safety guidelines. Bring home the glitter, the safety, and the unmatched joy!
+            {translate('home.hero_sub', language)}
           </p>
 
           <div className="mt-6 flex flex-wrap items-center justify-center gap-3 w-full sm:w-auto">
@@ -144,13 +162,13 @@ export default function Home({
               onClick={() => handleCategoryClick('all')}
               className="w-full sm:w-auto bg-[#D4AF37] hover:bg-white text-[#7A0C1E] font-sans font-bold text-xs md:text-sm py-3 px-8 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer hover:-translate-y-0.5 active:scale-95"
             >
-              Shop Now
+              {translate('home.shop_now', language)}
             </button>
             <button
               onClick={() => handleCategoryClick('combos')}
               className="w-full sm:w-auto bg-white/10 backdrop-blur-md border border-white/20 text-white font-sans font-semibold text-xs md:text-sm py-3 px-6 rounded-xl transition-all duration-300 cursor-pointer hover:bg-white/20 active:scale-95"
             >
-              View Combo Packs
+              {language === 'en' ? 'View Combo Packs 🎁' : 'பரிசு பெட்டிகள் பார்க்க 🎁'}
             </button>
           </div>
         </div>
@@ -221,6 +239,94 @@ export default function Home({
             </button>
           </div>
         </form>
+
+        {/* ================= TRUST BADGE & DELIVERY CHECKER ROW ================= */}
+        <div className="mt-5 grid grid-cols-1 md:grid-cols-12 gap-4 items-stretch">
+          
+          {/* Direct Sourcing Badge Card */}
+          <div className="md:col-span-5 bg-[#7A0C1E] text-white rounded-2xl p-4 border border-[#D4AF37]/35 shadow-md flex items-center gap-4 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-24 h-24 bg-[#D4AF37]/5 rounded-full blur-xl pointer-events-none"></div>
+            <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center border border-white/20 text-[#D4AF37] flex-shrink-0 animate-pulse">
+              <Award className="w-6 h-6" />
+            </div>
+            <div>
+              <div className="text-[10px] font-mono uppercase tracking-widest text-[#D4AF37] font-bold">
+                {language === 'en' ? 'Direct Sourcing Trust Factor' : 'நேரடி தயாரிப்பு நம்பிக்கை காரணி'}
+              </div>
+              <h3 className="font-sans font-extrabold text-xs sm:text-sm mt-0.5 text-white">
+                {language === 'en' ? 'Direct From Sivakasi, Tamil Nadu' : 'சிவகாசியில் இருந்து நேரடி கொள்முதல்'}
+              </h3>
+              <p className="text-[10px] text-white/70 mt-1 leading-relaxed">
+                {language === 'en' 
+                  ? 'Genuine, chemical-conscious green crackers packed directly at source. Save up to 40% with factory prices.' 
+                  : 'உரிமம் பெற்ற தொழிற்சாலைகளிலிருந்து நேரடியாக வரும் அசல் பட்டாசுகள். 40% வரை கூடுதல் சேமிப்பைப் பெறுங்கள்.'}
+              </p>
+            </div>
+          </div>
+
+          {/* Interactive Delivery Checker Widget */}
+          <div className="md:col-span-7 bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex flex-col justify-between">
+            <div className="flex items-center gap-2 mb-2">
+              <MapPin className="w-4 h-4 text-[#7A0C1E]" />
+              <span className="font-sans font-bold text-xs sm:text-sm text-slate-800">
+                {language === 'en' ? 'Tamil Nadu Delivery Checker' : 'தமிழ்நாடு டெலிவரி சேவை சரிபார்ப்பு'}
+              </span>
+            </div>
+
+            <form onSubmit={handleDeliveryCheck} className="flex gap-2">
+              <input
+                type="text"
+                value={deliveryQuery}
+                onChange={(e) => setDeliveryQuery(e.target.value)}
+                placeholder={language === 'en' ? 'Enter District or Pincode (e.g. Madurai, 600001)...' : 'மாவட்டம் அல்லது பின்கோடு உள்ளிடவும்...'}
+                className="flex-1 bg-slate-50 border border-slate-200 focus:border-[#7A0C1E] text-xs px-3 py-2 rounded-xl focus:outline-hidden font-medium text-slate-800"
+              />
+              <button
+                type="submit"
+                disabled={isCheckingDelivery}
+                className="bg-[#7A0C1E] hover:bg-[#911327] text-[#D4AF37] hover:text-white font-sans font-bold text-xs py-2 px-4 rounded-xl transition-all cursor-pointer disabled:opacity-50"
+              >
+                {isCheckingDelivery ? '...' : (language === 'en' ? 'Check' : 'சரிபார்')}
+              </button>
+            </form>
+
+            {/* Display Checker Result Output */}
+            {deliveryResult && (
+              <div className="mt-2.5">
+                {deliveryResult === 'not_available' ? (
+                  <div className="bg-rose-50 border border-rose-100 rounded-xl p-2.5 flex items-start gap-2 text-[10px] sm:text-xs text-rose-800">
+                    <HelpCircle className="w-4 h-4 flex-shrink-0 text-rose-500 mt-0.5" />
+                    <div>
+                      <b>{language === 'en' ? 'Serviceability Check:' : 'சேவை சரிபார்ப்பு:'}</b>{' '}
+                      {language === 'en' 
+                        ? 'This area is outside our express network or needs custom transport. Contact our support via WhatsApp below.' 
+                        : 'இந்த பகுதிக்கு நேரடி எக்ஸ்பிரஸ் டெலிவரி இல்லை. கூடுதல் விவரங்களுக்கு வாட்ஸ்அப்பில் தொடர்பு கொள்ளவும்.'}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-2.5 flex items-start gap-2 text-[10px] sm:text-xs text-emerald-800">
+                    <CheckCircle className="w-4 h-4 flex-shrink-0 text-emerald-600 mt-0.5" />
+                    <div>
+                      <div className="font-bold flex items-center gap-1">
+                        <span>{language === 'en' ? 'Delivery Available!' : 'டெலிவரி செய்ய முடியும்!'}</span>
+                        <span className="bg-emerald-100 text-emerald-800 font-mono text-[8px] px-1.5 py-0.5 rounded-sm uppercase tracking-wider font-extrabold ml-1.5">
+                          {deliveryResult.min_order_msg || (language === 'en' ? 'Sivakasi Direct' : 'சிவகாசி நேரடி')}
+                        </span>
+                      </div>
+                      <div className="text-[10px] text-emerald-700 mt-0.5 leading-relaxed">
+                        {language === 'en' ? 'Serviceable district: ' : 'சேவைக்குரிய பகுதி: '}
+                        <b className="font-bold text-slate-800 uppercase">{deliveryResult.district}</b>.
+                        {language === 'en' ? ' Typical transit time: ' : ' தோராயமான டெலிவரி நேரம்: '}
+                        <b className="font-mono text-slate-800 font-extrabold">{deliveryResult.estimated_days} {language === 'en' ? 'days' : 'நாட்கள்'}</b>.
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+        </div>
       </div>
 
       <DecorativeBorder />
