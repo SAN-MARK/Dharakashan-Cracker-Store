@@ -9,6 +9,8 @@ interface ShopProps {
   setSearchFilters: (filters: { category: string; priceRange: string; searchTerm: string }) => void;
   addToCart: (product: Product) => void;
   setSelectedProduct: (product: Product | null) => void;
+  isLoggedIn: boolean;
+  setCurrentPage: (page: Page) => void;
 }
 
 export default function Shop({
@@ -16,6 +18,8 @@ export default function Shop({
   setSearchFilters,
   addToCart,
   setSelectedProduct,
+  isLoggedIn,
+  setCurrentPage,
 }: ShopProps) {
   // Sync page state with global filters passed from home
   const [selectedCategory, setSelectedCategory] = useState(searchFilters.category || 'all');
@@ -410,7 +414,7 @@ export default function Shop({
                   </div>
 
                   {/* Price & Buy Button */}
-                  <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between px-0.5">
+                  <div className="mt-3 pt-2.5 border-t border-[#7A0C1E]/10 flex items-center justify-between px-0.5">
                     <div>
                       <span className="text-xs font-extrabold text-[#7A0C1E] font-mono block">
                         ₹{product.price}
@@ -421,13 +425,23 @@ export default function Shop({
                         </span>
                       )}
                     </div>
-                    <button
-                      onClick={() => addToCart(product)}
-                      className="bg-[#7A0C1E]/5 hover:bg-[#7A0C1E] hover:text-white text-[#7A0C1E] p-2 rounded-lg transition-all active:scale-90 cursor-pointer"
-                      aria-label="Add to cart"
-                    >
-                      <ShoppingBag className="w-3.5 h-3.5" />
-                    </button>
+                    {isLoggedIn ? (
+                      <button
+                        onClick={() => addToCart(product)}
+                        className="bg-[#7A0C1E]/5 hover:bg-[#7A0C1E] hover:text-white text-[#7A0C1E] p-2 rounded-lg transition-all active:scale-90 cursor-pointer"
+                        aria-label="Add to cart"
+                      >
+                        <ShoppingBag className="w-3.5 h-3.5" />
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => setCurrentPage('login')}
+                        className="bg-[#D4AF37]/10 hover:bg-[#7A0C1E] hover:text-white text-[#7A0C1E] font-sans font-bold text-[9px] py-1.5 px-2.5 rounded-lg border border-[#D4AF37]/30 transition-all active:scale-90 cursor-pointer"
+                        aria-label="Login to Buy"
+                      >
+                        Login & Buy
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}

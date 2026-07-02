@@ -18,6 +18,7 @@ interface HomeProps {
   setSearchFilters: (filters: { category: string; priceRange: string; searchTerm: string }) => void;
   addToCart: (product: Product) => void;
   setSelectedProduct: (product: Product | null) => void;
+  isLoggedIn: boolean;
 }
 
 export default function Home({
@@ -25,6 +26,7 @@ export default function Home({
   setSearchFilters,
   addToCart,
   setSelectedProduct,
+  isLoggedIn,
 }: HomeProps) {
   // Local Search / Filter states
   const [searchTerm, setSearchTerm] = useState('');
@@ -360,14 +362,25 @@ export default function Home({
                     </span>
                   )}
                 </div>
-                <button
-                  onClick={() => addToCart(product)}
-                  className="bg-[#7A0C1E]/5 hover:bg-[#7A0C1E] hover:text-white text-[#7A0C1E] font-sans font-bold text-xs p-2.5 rounded-xl transition-all active:scale-95 cursor-pointer flex items-center gap-1.5"
-                  aria-label={`Add ${product.name} to cart`}
-                >
-                  <ShoppingBag className="w-4 h-4" />
-                  <span>Buy</span>
-                </button>
+                {isLoggedIn ? (
+                  <button
+                    onClick={() => addToCart(product)}
+                    className="bg-[#7A0C1E]/5 hover:bg-[#7A0C1E] hover:text-white text-[#7A0C1E] font-sans font-bold text-xs p-2.5 rounded-xl transition-all active:scale-95 cursor-pointer flex items-center gap-1.5"
+                    aria-label={`Add ${product.name} to cart`}
+                  >
+                    <ShoppingBag className="w-4 h-4" />
+                    <span>Buy</span>
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => setCurrentPage('login')}
+                    className="bg-[#D4AF37]/10 hover:bg-[#7A0C1E] hover:text-white text-[#7A0C1E] font-sans font-bold text-[10.5px] py-2 px-3.5 rounded-xl border border-[#D4AF37]/35 transition-all active:scale-95 cursor-pointer flex items-center gap-1.5"
+                    aria-label="Login to Buy"
+                  >
+                    <ShoppingBag className="w-3.5 h-3.5" />
+                    <span>Login & Buy</span>
+                  </button>
+                )}
               </div>
             </div>
           ))}

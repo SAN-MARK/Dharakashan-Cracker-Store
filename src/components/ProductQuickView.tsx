@@ -6,12 +6,16 @@ interface ProductQuickViewProps {
   product: Product | null;
   onClose: () => void;
   addToCart: (product: Product, quantity: number) => void;
+  isLoggedIn: boolean;
+  onLoginRedirect: () => void;
 }
 
 export default function ProductQuickView({
   product,
   onClose,
   addToCart,
+  isLoggedIn,
+  onLoginRedirect,
 }: ProductQuickViewProps) {
   const [quantity, setQuantity] = useState(1);
 
@@ -144,32 +148,44 @@ export default function ProductQuickView({
 
           {/* Cart Actions */}
           <div className="pt-2 flex items-center gap-3">
-            {/* Quantity Selector */}
-            <div className="flex items-center border border-slate-300 rounded-xl bg-white overflow-hidden h-11 shadow-xs">
-              <button
-                onClick={() => setQuantity(prev => Math.max(1, prev - 1))}
-                className="px-3 hover:bg-slate-100 active:bg-slate-200 text-slate-600 font-bold transition-all"
-              >
-                -
-              </button>
-              <span className="px-3 text-sm font-bold text-slate-800 font-mono w-8 text-center">
-                {quantity}
-              </span>
-              <button
-                onClick={() => setQuantity(prev => prev + 1)}
-                className="px-3 hover:bg-slate-100 active:bg-slate-200 text-slate-600 font-bold transition-all"
-              >
-                +
-              </button>
-            </div>
+            {isLoggedIn ? (
+              <>
+                {/* Quantity Selector */}
+                <div className="flex items-center border border-slate-300 rounded-xl bg-white overflow-hidden h-11 shadow-xs">
+                  <button
+                    onClick={() => setQuantity(prev => Math.max(1, prev - 1))}
+                    className="px-3 hover:bg-slate-100 active:bg-slate-200 text-slate-600 font-bold transition-all"
+                  >
+                    -
+                  </button>
+                  <span className="px-3 text-sm font-bold text-slate-800 font-mono w-8 text-center">
+                    {quantity}
+                  </span>
+                  <button
+                    onClick={() => setQuantity(prev => prev + 1)}
+                    className="px-3 hover:bg-slate-100 active:bg-slate-200 text-slate-600 font-bold transition-all"
+                  >
+                    +
+                  </button>
+                </div>
 
-            <button
-              onClick={handleAddToCartClick}
-              className="flex-1 bg-[#7A0C1E] hover:bg-[#911327] text-[#D4AF37] hover:text-white font-sans font-bold text-xs sm:text-sm h-11 rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-1.5 active:scale-98 cursor-pointer"
-            >
-              <ShoppingBag className="w-4 h-4" />
-              <span>Add ₹{product.price * quantity} to Festive Bag</span>
-            </button>
+                <button
+                  onClick={handleAddToCartClick}
+                  className="flex-1 bg-[#7A0C1E] hover:bg-[#911327] text-[#D4AF37] hover:text-white font-sans font-bold text-xs sm:text-sm h-11 rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-1.5 active:scale-98 cursor-pointer"
+                >
+                  <ShoppingBag className="w-4 h-4" />
+                  <span>Add ₹{product.price * quantity} to Festive Bag</span>
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={onLoginRedirect}
+                className="w-full bg-[#7A0C1E] hover:bg-[#911327] text-[#D4AF37] hover:text-white font-sans font-bold text-xs sm:text-sm h-11 rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-1.5 active:scale-98 cursor-pointer"
+              >
+                <ShoppingBag className="w-4 h-4" />
+                <span>Login & Add to Cart</span>
+              </button>
+            )}
           </div>
         </div>
       </div>

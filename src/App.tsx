@@ -178,6 +178,7 @@ export default function App() {
               setSearchFilters={setSearchFilters}
               addToCart={addToCart}
               setSelectedProduct={setSelectedProduct}
+              isLoggedIn={session.isLoggedIn}
             />
           )}
 
@@ -189,6 +190,8 @@ export default function App() {
               setSearchFilters={setSearchFilters}
               addToCart={addToCart}
               setSelectedProduct={setSelectedProduct}
+              isLoggedIn={session.isLoggedIn}
+              setCurrentPage={handleNavigatePage}
             />
           )}
 
@@ -256,6 +259,11 @@ export default function App() {
           product={selectedProduct}
           onClose={() => setSelectedProduct(null)}
           addToCart={addToCart}
+          isLoggedIn={session.isLoggedIn}
+          onLoginRedirect={() => {
+            setSelectedProduct(null);
+            handleNavigatePage('login');
+          }}
         />
 
         {/* ================= FLOATING TOAST NOTIFICATION ================= */}
