@@ -78,7 +78,7 @@ export default function Navbar({
           </div>
           <div>
             <span className="font-sans font-bold text-lg leading-tight tracking-tight text-white block">
-              Sparkle <span className="text-[#D4AF37]">Diwali</span>
+              Dharakshan <span className="text-[#D4AF37]">Cracker Store</span>
             </span>
             <span className="text-[9px] text-[#D4AF37]/80 block font-mono tracking-widest -mt-0.5">
               PREMIUM CRACKERS

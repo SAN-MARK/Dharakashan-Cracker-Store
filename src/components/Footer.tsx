@@ -50,7 +50,7 @@ export default function Footer({ setCurrentPage }: FooterProps) {
               <path d="M4 14C4 18.5 7.5 21 12 21C16.5 21 20 18.5 20 14C20 14 16 16 12 16C8 16 4 14 4 14Z" fill="#D4AF37" />
             </svg>
             <span className="font-sans font-bold text-lg text-white">
-              Sparkle <span className="text-[#D4AF37]">Diwali</span>
+              Dharakshan <span className="text-[#D4AF37]">Cracker Store</span>
             </span>
           </div>
           <p className="text-xs text-[#FFF8F0]/70 leading-relaxed">
@@ -59,15 +59,15 @@ export default function Footer({ setCurrentPage }: FooterProps) {
           <div className="space-y-2 pt-1 text-xs text-[#FFF8F0]/80">
             <div className="flex items-center gap-2">
               <Phone className="w-3.5 h-3.5 text-[#D4AF37]" />
-              <span className="font-mono">+91 94432 10567</span>
+              <span className="font-mono">+91 98765 43210</span>
             </div>
             <div className="flex items-center gap-2">
               <Mail className="w-3.5 h-3.5 text-[#D4AF37]" />
-              <span className="font-mono">support@sparklediwali.com</span>
+              <span className="font-mono">contact@dharakashancrackers.com</span>
             </div>
             <div className="flex items-center gap-2">
               <MapPin className="w-3.5 h-3.5 text-[#D4AF37]" />
-              <span>Sivakasi Bypass Road, Virudhunagar, TN</span>
+              <span>45, Vandalur Main Road, Chengalpattu, TN</span>
             </div>
           </div>
         </div>
@@ -192,7 +192,7 @@ export default function Footer({ setCurrentPage }: FooterProps) {
       {/* Copyright Line */}
       <div className="border-t border-[#D4AF37]/20 py-4 px-6 text-center text-[11px] text-[#FFF8F0]/50">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
-          <p>© 2026 Sparkle Diwali. All rights reserved. Sourced from Sivakasi, Tamil Nadu.</p>
+          <p>© 2026 Dharakshan Cracker Store. All rights reserved. Sourced from Sivakasi, Tamil Nadu.</p>
           <p className="flex items-center gap-1">
             Made with <Heart className="w-3 h-3 text-[#FF9933] fill-current" /> for a safer & brighter Deepavali.
           </p>

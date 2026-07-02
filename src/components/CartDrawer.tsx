@@ -414,7 +414,7 @@ export default function CartDrawer({
                 </p>
               </div>
               <p className="text-xs text-slate-500 leading-relaxed mb-6">
-                Thank you for choosing <b>Sparkle Diwali</b> for your family celebrations. Stay safe and enjoy!
+                Thank you for choosing <b>Dharakshan Cracker Store</b> for your family celebrations. Stay safe and enjoy!
               </p>
               <button
                 onClick={() => {

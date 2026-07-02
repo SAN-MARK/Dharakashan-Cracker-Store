@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Mail, Phone, MapPin, Send, HelpCircle, Flame, Star } from 'lucide-react';
+import { Mail, Phone, MapPin, Send, HelpCircle, Flame, Star, Clock, Globe } from 'lucide-react';
 import DecorativeBorder from '../components/DecorativeBorder';
 
 export default function Contact() {
@@ -77,7 +77,7 @@ export default function Contact() {
           <div className="md:col-span-5 space-y-6">
             <div className="bg-white rounded-2xl p-5 border border-[#D4AF37]/20 shadow-xs space-y-5">
               <h3 className="font-sans font-bold text-slate-800 text-sm pb-2 border-b">
-                Sivakasi Dispatch Headquarters
+                Dharakashan Cracker Store
               </h3>
               
               <div className="space-y-4">
@@ -88,7 +88,7 @@ export default function Contact() {
                   </div>
                   <div>
                     <h4 className="font-bold text-slate-800">Support Maildesk</h4>
-                    <p className="font-mono mt-0.5">support@sparklediwali.com</p>
+                    <p className="font-mono mt-0.5">contact@dharakashancrackers.com</p>
                     <p className="text-[10px] text-slate-400">Response within 4 hours</p>
                   </div>
                 </div>
@@ -100,8 +100,8 @@ export default function Contact() {
                   </div>
                   <div>
                     <h4 className="font-bold text-slate-800">Customer Helpline</h4>
-                    <p className="font-mono mt-0.5">+91 94432 10567</p>
-                    <p className="text-[10px] text-slate-400">Mon - Sat, 9:00 AM - 7:00 PM IST</p>
+                    <p className="font-mono mt-0.5">+91 98765 43210</p>
+                    <p className="text-[10px] text-slate-400">Call or WhatsApp anytime</p>
                   </div>
                 </div>
 
@@ -111,10 +111,41 @@ export default function Contact() {
                     <MapPin className="w-4 h-4" />
                   </div>
                   <div>
-                    <h4 className="font-bold text-slate-800">Warehouse Address</h4>
+                    <h4 className="font-bold text-slate-800">Store Address</h4>
                     <p className="mt-0.5 leading-relaxed">
-                      Plot No 14B, Sivakasi Bypass Road, Near Virudhunagar Toll Plaza, Virudhunagar, Tamil Nadu, PIN 626001
+                      45, Vandalur Main Road, Chengalpattu District, Tamil Nadu – 626123
                     </p>
+                  </div>
+                </div>
+
+                {/* Store Hours */}
+                <div className="flex gap-3 text-xs text-slate-600">
+                  <div className="w-8 h-8 rounded-lg bg-[#7A0C1E]/5 flex items-center justify-center text-[#7A0C1E] flex-shrink-0">
+                    <Clock className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-slate-800">Store Hours</h4>
+                    <p className="mt-0.5 leading-relaxed font-mono">
+                      Mon–Sat, 9:00 AM – 8:00 PM
+                    </p>
+                  </div>
+                </div>
+
+                {/* Website */}
+                <div className="flex gap-3 text-xs text-slate-600">
+                  <div className="w-8 h-8 rounded-lg bg-[#7A0C1E]/5 flex items-center justify-center text-[#7A0C1E] flex-shrink-0">
+                    <Globe className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-slate-800">Official Website</h4>
+                    <a 
+                      href="https://dharakashancrackerstore.vercel.app/" 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="text-[#7A0C1E] hover:underline block mt-0.5 font-mono break-all"
+                    >
+                      dharakashancrackerstore.vercel.app
+                    </a>
                   </div>
                 </div>
               </div>
@@ -126,7 +157,7 @@ export default function Contact() {
                 ⚠️ Emergency & Safety Support
               </h4>
               <p className="text-[11px] text-[#FFF8F0]/70 leading-relaxed">
-                In case of transport inquiries, regulatory questions, or bulk school preorders, you can contact our special safety logistics pilot directly at <b className="text-white font-mono">+91 94430 00888</b>.
+                In case of transport inquiries, regulatory questions, or bulk school preorders, you can contact our special safety logistics pilot directly at <b className="text-white font-mono">+91 98765 43210</b>.
               </p>
             </div>
           </div>

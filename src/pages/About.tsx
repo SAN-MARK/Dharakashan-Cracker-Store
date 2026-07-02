@@ -75,7 +75,7 @@ export default function About() {
               A Safer, Brighter, Green Celebration for Every Indian Home
             </h2>
             <p className="text-xs text-slate-600 leading-relaxed">
-              Sparkle Diwali was founded in Sivakasi with a single ambitious mission: to revolutionize the traditional firecrackers sector in India. Historically, finding high-quality, legally compliant, and safety-tested crackers meant dealing with unorganized local stalls, unpredictable price swings, and unknown chemical configurations.
+              Dharakshan Cracker Store was founded in Sivakasi with a single ambitious mission: to revolutionize the traditional firecrackers sector in India. Historically, finding high-quality, legally compliant, and safety-tested crackers meant dealing with unorganized local stalls, unpredictable price swings, and unknown chemical configurations.
             </p>
             <p className="text-xs text-slate-600 leading-relaxed">
               We changed that by creating a digital-first direct platform that emphasizes rigorous PESO checks and chemical auditing. Today, we stand proud as a pioneering e-commerce vendor delivering exclusively green crackers that emit <b>30-35% fewer chemical dust particles</b> than ordinary alternatives.

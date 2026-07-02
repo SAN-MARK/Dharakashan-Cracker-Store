@@ -83,7 +83,7 @@ export default function Login({ handleLoginSuccess }: LoginProps) {
         <div className="p-6 md:p-10 flex flex-col justify-center text-left bg-white">
           <div className="mb-6">
             <h3 className="font-sans font-extrabold text-xl text-slate-800 tracking-tight">
-              {isSignUp ? 'Create Festive Account' : 'Sign In To Sparkle'}
+              {isSignUp ? 'Create Festive Account' : 'Sign In To Dharakshan'}
             </h3>
             <p className="text-xs text-slate-400 mt-1">
               {isSignUp ? 'Get access to direct Sivakasi wholesale prices' : 'Access your cart and secure order histories'}
