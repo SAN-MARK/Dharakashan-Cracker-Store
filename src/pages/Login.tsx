@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Mail, Lock, User, Eye, EyeOff, ShieldCheck, Heart } from 'lucide-react';
 import { UserSession } from '../types';
+import { supabase } from '../lib/supabase';
 
 // Import our generated hero banner
 import heroBanner from '../assets/images/hero_banner_diwali_1782969842884.jpg';
@@ -23,26 +24,154 @@ export default function Login({ handleLoginSuccess }: LoginProps) {
 
   const [loading, setLoading] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
+  const [errorMsg, setErrorMsg] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isSignUp && !fullName) {
-      alert('Please enter your full name.');
-      return;
+    setErrorMsg('');
+    setSuccessMsg('');
+
+    if (isSignUp) {
+      console.log('Form submitted: Create Festive Account (Sign Up)');
+      console.log('Validating form fields...');
+
+      if (!fullName.trim()) {
+        setErrorMsg('Please enter your full name.');
+        console.warn('Validation failed: Full name is empty.');
+        return;
+      }
+      if (!email.trim()) {
+        setErrorMsg('Please enter your email address.');
+        console.warn('Validation failed: Email address is empty.');
+        return;
+      }
+      if (!phone.trim()) {
+        setErrorMsg('Please enter your mobile number.');
+        console.warn('Validation failed: Phone number is empty.');
+        return;
+      }
+      const cleanedPhone = phone.trim().replace(/\s+/g, '');
+      const phoneRegex = /^\d{10}$/;
+      if (!phoneRegex.test(cleanedPhone)) {
+        setErrorMsg('Please enter a valid 10-digit mobile number.');
+        console.warn('Validation failed: Mobile number is not 10 digits.', phone);
+        return;
+      }
+      if (password.length < 6) {
+        setErrorMsg('Password must be at least 6 characters long.');
+        console.warn('Validation failed: Password length < 6 characters.');
+        return;
+      }
+      if (!agreeTerms) {
+        setErrorMsg('You must agree to local Municipal Safe Storage Regulations.');
+        console.warn('Validation failed: Safety terms agreement checkbox not checked.');
+        return;
+      }
+
+      setLoading(true);
+
+      if (!supabase) {
+        console.error('Supabase Client is not initialized.');
+        setErrorMsg('Database connection is not configured on the server. Please check VITE_SUPABASE_ANON_KEY.');
+        setLoading(false);
+        return;
+      }
+
+      try {
+        console.log(`Initiating Supabase Auth SignUp for: ${email}`);
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: {
+              full_name: fullName,
+              mobile_number: cleanedPhone,
+              agreed_to_safety_terms: agreeTerms
+            }
+          }
+        });
+
+        console.log('Supabase Auth SignUp Response received:', { data, error });
+
+        if (error) {
+          console.error('Supabase Auth SignUp failed with error:', error.message);
+          setErrorMsg(error.message);
+          setLoading(false);
+        } else {
+          console.log('Supabase Auth SignUp successful! Registered user:', data.user);
+          setSuccessMsg('Registration Successful! Redirecting you to login...');
+          setLoading(false);
+
+          // Clear fields on successful registration
+          setFullName('');
+          setPhone('');
+          setPassword('');
+          setAgreeTerms(false);
+
+          setTimeout(() => {
+            setIsSignUp(false);
+            setSuccessMsg('');
+          }, 2000);
+        }
+      } catch (err: any) {
+        console.error('Unexpected Exception during SignUp:', err);
+        setErrorMsg(err.message || 'An unexpected error occurred during registration.');
+        setLoading(false);
+      }
+
+    } else {
+      console.log('Form submitted: Sign In To Dharakshan (Login)');
+      console.log('Validating login fields...');
+
+      if (!email.trim() || !password) {
+        setErrorMsg('Please enter both email address and password.');
+        console.warn('Validation failed: Email or password is empty.');
+        return;
+      }
+
+      setLoading(true);
+
+      if (!supabase) {
+        console.error('Supabase Client is not initialized.');
+        setErrorMsg('Database connection is not configured on the server. Please check VITE_SUPABASE_ANON_KEY.');
+        setLoading(false);
+        return;
+      }
+
+      try {
+        console.log(`Initiating Supabase Auth SignIn for: ${email}`);
+        
+        // Supabase persists the session automatically by default.
+        // If they want us to ensure it's not disabled, we confirm default behavior.
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email,
+          password
+        });
+
+        console.log('Supabase Auth SignIn Response received:', { data, error });
+
+        if (error) {
+          console.error('Supabase Auth SignIn failed with error:', error.message);
+          // Security Requirement: Obscure specific error details (email exists vs wrong password)
+          setErrorMsg('Invalid login credentials. Please check your email and password.');
+          setLoading(false);
+        } else {
+          console.log('Supabase Auth SignIn successful! Logged-in user:', data.user);
+          const displayName = data.user?.user_metadata?.full_name || data.user?.email?.split('@')[0] || 'Valued Customer';
+          
+          setSuccessMsg('Welcome back! Logging you in...');
+          setLoading(false);
+
+          setTimeout(() => {
+            handleLoginSuccess(displayName, email);
+          }, 1000);
+        }
+      } catch (err: any) {
+        console.error('Unexpected Exception during SignIn:', err);
+        setErrorMsg('An unexpected error occurred during log in. Please try again.');
+        setLoading(false);
+      }
     }
-
-    setLoading(true);
-
-    // Simulate authentication pipeline
-    setTimeout(() => {
-      setLoading(false);
-      const name = isSignUp ? fullName : email.split('@')[0];
-      setSuccessMsg(isSignUp ? 'Registration Successful! Greeting you now...' : 'Welcome back! Logging you in...');
-      
-      setTimeout(() => {
-        handleLoginSuccess(name, email);
-      }, 800);
-    }, 1200);
   };
 
   return (
@@ -102,6 +231,14 @@ export default function Login({ handleLoginSuccess }: LoginProps) {
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4" id="login-signup-form">
+              {errorMsg && (
+                <div className="bg-rose-50 text-rose-800 border border-rose-200 rounded-xl p-3.5 text-xs font-medium mb-4 flex items-start gap-2 animate-pulse">
+                  <svg className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                  <span>{errorMsg}</span>
+                </div>
+              )}
               {isSignUp && (
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1">Your Full Name *</label>
