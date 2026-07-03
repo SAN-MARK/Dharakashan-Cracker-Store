@@ -219,7 +219,7 @@ export default function VoiceAssistant({
     } else {
       if (!hasGreetedRef.current) {
         setHasGreeted(true);
-        speak("Welcome to Dharakashan Cracker Store! Vanakkam! Namaste! Are you shopping for sparklers, a big fireworks display, or a gift box this Diwali?", true);
+        speak("Hi! Welcome to Dharakshan Cracker Store — looking for something specific, or want some Diwali gift box suggestions?", true);
       } else {
         startListening();
       }
@@ -335,6 +335,24 @@ export default function VoiceAssistant({
     // 6. Banned/Illegal crackers guardrail
     if (t.includes('banned') || t.includes('illegal') || t.includes('chinese') || t.includes('pollution')) {
       speak("Dharakashan only sells certified PESO-approved green crackers that comply with Indian regulations. We do not sell any banned or illegal crackers.", true);
+      return;
+    }
+
+    // 6a. State/Local Regulation restrictions boundary
+    if (t.includes('permitted') || t.includes('allowed') || t.includes('legal in') || t.includes('my city') || t.includes('my state') || t.includes('regulation')) {
+      speak("Cracker rules vary by Indian state. Please check your local regulations to see which crackers are permitted in your specific area.", true);
+      return;
+    }
+
+    // 6b. Exact Live Stock or Delivery Dates boundary
+    if (t.includes('exact delivery') || t.includes('when will it arrive') || t.includes('live stock') || t.includes('how many left') || t.includes('exact date')) {
+      speak("Let me help you check that on the product page, or our support team can confirm the exact delivery timing.", true);
+      return;
+    }
+
+    // 6c. Order actions (refunds, payments, cancellations) boundary
+    if (t.includes('refund') || t.includes('cancellation') || t.includes('cancel') || t.includes('pay directly') || t.includes('return')) {
+      speak("I cannot process payments, refunds, or cancellations directly here. I will route you to the order page or connect you to our support team.", true);
       return;
     }
 

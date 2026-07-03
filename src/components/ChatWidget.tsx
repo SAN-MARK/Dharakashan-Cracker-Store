@@ -38,7 +38,7 @@ export default function ChatWidget({
     {
       id: 'welcome',
       sender: 'bot',
-      text: "Welcome to Dharakashan Cracker Store! Vanakkam! Namaste! Are you shopping for sparklers, a big fireworks display, or a gift box this Diwali? 🎆",
+      text: "Hi! Welcome to Dharakshan Cracker Store — looking for something specific, or want some Diwali gift box suggestions? 🪔",
       timestamp: new Date()
     }
   ]);
@@ -155,16 +155,16 @@ export default function ChatWidget({
 
     // 4. Language switches / Greetings
     if (query.includes('hindi') || query.includes('hindi me') || query.includes('हिन्दी') || query.includes('हिंदी')) {
-      addBotMessage("नमस्ते! धरकाशन पटाखा स्टोर में आपका स्वागत है। 🪔 मैं दीया हूँ। क्या आप दिवाली के लिए फुलझड़ी, अनार या कोई गिफ़्ट बॉक्स ढूँढ रहे हैं?");
+      addBotMessage("नमस्ते! धरकाशन पटाखा स्टोर में आपका स्वागत है। 🪔 मैं प्रिया हूँ। क्या आप दिवाली के लिए फुलझड़ी, अनार या कोई गिफ़्ट बॉक्स ढूँढ रहे हैं?");
       return;
     }
     if (query.includes('tamil') || query.includes('tamilil') || query.includes('தமிழ்') || query.includes('தமிழ் பேசு')) {
-      addBotMessage("வணக்கம்! தாரகாஷன் பட்டாசு கடைக்கு உங்களை வரவேற்கிறோம். 🪔 நான் தியா. இந்த தீபாவளிக்கு மத்தாப்பு, அனார் அல்லது பரிசு பெட்டி தேடுகிறீர்களா?");
+      addBotMessage("வணக்கம்! தாரகாஷன் பட்டாசு கடைக்கு உங்களை வரவேற்கிறோம். 🪔 நான் பிரியா. இந்த தீபாவளிக்கு மத்தாப்பு, அனார் அல்லது பரிசு பெட்டி தேடுகிறீர்களா?");
       return;
     }
 
     if (query === 'hi' || query === 'hello' || query === 'hey' || query.includes('greetings') || query.includes('namaste') || query.includes('vanakkam')) {
-      addBotMessage("Hello! Happy Diwali! 🪔 I'm Diya, your chat shopkeeper. I can recommend green crackers, check stock, verify shipping, or add items to your cart! What are you shopping for today?");
+      addBotMessage("Hi! Welcome to Dharakshan Cracker Store — looking for something specific, or want some Diwali gift box suggestions? 🪔");
       return;
     }
 
@@ -376,6 +376,42 @@ export default function ChatWidget({
       return;
     }
 
+    // State/Local Regulation boundary check
+    if (query.includes('legal in') || query.includes('permitted in') || query.includes('allowed in') || query.includes('state rule') || query.includes('ban in') || query.includes('restrict in') || query.includes('permission')) {
+      addBotMessage(
+        "Cracker regulations vary by Indian state. Please check your local state or city regulations to see which specific crackers are permitted in your area."
+      );
+      return;
+    }
+
+    // Live Stock / Exact Delivery Date check
+    if (query.includes('exact delivery date') || query.includes('when exactly will it deliver') || query.includes('live stock') || query.includes('exact stock count') || query.includes('how many left')) {
+      addBotMessage(
+        "Let me help you check that on the product page, or our support team can confirm the exact delivery timing. We want to ensure everything is perfectly safe and accurate for you!"
+      );
+      return;
+    }
+
+    // Direct payments / cancellations / refunds handling
+    if (query.includes('process refund') || query.includes('cancel my order') || query.includes('process payment') || query.includes('refund money')) {
+      addBotMessage(
+        "I cannot process payments, refunds, or cancellations directly here. Please go to the checkout/order page, or I can connect you to our support team for help."
+      );
+      return;
+    }
+
+    // General knowledge / Unrelated questions redirect
+    const unrelatedKeywords = ['capital of', 'weather', 'recipe', 'write a program', 'math', 'who is', 'historical', 'meaning of', 'translate', 'solve'];
+    const isUnrelated = unrelatedKeywords.some(keyword => query.includes(keyword)) || 
+                     (!query.includes('cracker') && !query.includes('sparkler') && !query.includes('flower') && !query.includes('pot') && !query.includes('fountain') && !query.includes('rocket') && !query.includes('sky') && !query.includes('sound') && !query.includes('combo') && !query.includes('box') && !query.includes('price') && !query.includes('buy') && !query.includes('cart') && !query.includes('delivery') && !query.includes('ship') && !query.includes('coupon') && !query.includes('discount') && !query.includes('pincode') && !query.includes('track') && !query.includes('order') && !query.includes('hi') && !query.includes('hello') && !query.includes('help') && !query.includes('human') && !query.includes('talk') && !query.includes('whatsapp') && !query.includes('phone') && !query.includes('refund') && !query.includes('return') && query.length > 15);
+
+    if (isUnrelated) {
+      addBotMessage(
+        "I'm here to help you with your cracker shopping — is there something from our store I can help you find? 🪔"
+      );
+      return;
+    }
+
     // 12. Standard Fallback - match single product fuzzy just in case they typed a product name directly
     const directProd = findProductFuzzy(query);
     if (directProd) {
@@ -493,7 +529,7 @@ export default function ChatWidget({
               initial={{ opacity: 0, scale: 0.9, y: 30 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 30 }}
-              id="diya-chat-panel"
+              id="priya-chat-panel"
               className="w-[340px] sm:w-[380px] h-[520px] bg-white rounded-3xl shadow-2xl border border-[#D4AF37]/30 flex flex-col overflow-hidden relative"
             >
               {/* Header */}
@@ -508,7 +544,7 @@ export default function ChatWidget({
                   </div>
                   <div className="text-left">
                     <h4 className="font-sans font-extrabold text-sm text-white tracking-wide flex items-center gap-1">
-                      Diya
+                      Priya
                       <Sparkle className="w-3.5 h-3.5 text-[#D4AF37] fill-[#D4AF37]" />
                     </h4>
                     <p className="text-[10px] text-[#FFF8F0]/70 font-sans">Dharakashan Shopping Assistant</p>
@@ -535,7 +571,7 @@ export default function ChatWidget({
               <div 
                 ref={chatContainerRef}
                 className="flex-1 overflow-y-auto p-4 bg-[#FFFBF7] space-y-3 scrollbar-thin text-left"
-                id="diya-chat-messages"
+                id="priya-chat-messages"
               >
                 {messages.map((msg) => {
                   const isBot = msg.sender === 'bot';
