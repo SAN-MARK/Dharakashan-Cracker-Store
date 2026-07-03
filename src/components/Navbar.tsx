@@ -48,6 +48,7 @@ export default function Navbar({
     { id: 'shop', label: translate('nav.shop', language) },
     { id: 'combo', label: translate('nav.combo', language) },
     { id: 'bulk', label: translate('nav.bulk', language) },
+    { id: 'track', label: translate('nav.track', language) },
     { id: 'contact', label: translate('nav.contact', language) },
   ];
 

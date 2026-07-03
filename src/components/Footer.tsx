@@ -110,6 +110,14 @@ export default function Footer({ setCurrentPage }: FooterProps) {
                 ✦ Help & Support
               </button>
             </li>
+            <li>
+              <button
+                onClick={() => { setCurrentPage('track'); window.scrollTo({ top: 0 }); }}
+                className="hover:text-[#D4AF37] transition-colors cursor-pointer text-[#D4AF37] font-semibold text-left"
+              >
+                ✦ Track Order 📦
+              </button>
+            </li>
           </ul>
         </div>
 

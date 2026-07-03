@@ -804,6 +804,19 @@ export default function ChatWidget({
                               </span>
                               <span>{new Date(msg.cardData.order.created_at).toLocaleDateString()}</span>
                             </div>
+
+                            <div className="pt-2 border-t border-slate-100 flex justify-end">
+                              <button
+                                onClick={() => {
+                                  setCurrentPage('track');
+                                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                                  setIsOpen(false); // Optionally close the chat widget
+                                }}
+                                className="bg-[#7A0C1E] hover:bg-[#911327] text-white px-2.5 py-1 rounded-lg text-[9px] font-sans font-bold flex items-center gap-1 cursor-pointer transition-all active:scale-95 shadow-sm"
+                              >
+                                View full tracker timeline 📦
+                              </button>
+                            </div>
                           </div>
                         </div>
                       )}

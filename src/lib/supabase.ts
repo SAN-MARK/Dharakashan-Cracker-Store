@@ -506,6 +506,106 @@ export const dbService = {
   },
 
   /**
+   * Track order(s) by ID, phone number, customer ID or customer name
+   */
+  async trackOrder(query: string): Promise<any[]> {
+    const cleanQuery = query.trim();
+    if (!cleanQuery) return [];
+
+    console.log(`[dbService] Tracking order with search term: "${cleanQuery}"`);
+
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const foundOrders: any[] = [];
+        const uniqueIds = new Set<string>();
+
+        // 1. Try matching by exact Order ID
+        const { data: byId, error: errId } = await supabase
+          .from('orders')
+          .select('*')
+          .eq('id', cleanQuery);
+        
+        if (!errId && byId) {
+          byId.forEach(o => {
+            if (!uniqueIds.has(o.id)) {
+              uniqueIds.add(o.id);
+              foundOrders.push(o);
+            }
+          });
+        }
+
+        // 2. Try matching by exact Phone Number
+        const { data: byPhone, error: errPhone } = await supabase
+          .from('orders')
+          .select('*')
+          .eq('phone', cleanQuery);
+
+        if (!errPhone && byPhone) {
+          byPhone.forEach(o => {
+            if (!uniqueIds.has(o.id)) {
+              uniqueIds.add(o.id);
+              foundOrders.push(o);
+            }
+          });
+        }
+
+        // 3. Try matching by partial Customer Name (Case-insensitive)
+        const { data: byName, error: errName } = await supabase
+          .from('orders')
+          .select('*')
+          .ilike('customer_name', `%${cleanQuery}%`);
+
+        if (!errName && byName) {
+          byName.forEach(o => {
+            if (!uniqueIds.has(o.id)) {
+              uniqueIds.add(o.id);
+              foundOrders.push(o);
+            }
+          });
+        }
+
+        // Match order items for all unique found orders
+        const ordersWithItems = await Promise.all(
+          foundOrders.map(async (ord) => {
+            const items = await this.getOrderItems(ord.id);
+            return {
+              ...ord,
+              items: items || []
+            };
+          })
+        );
+
+        console.log(`[dbService] Supabase matched ${ordersWithItems.length} orders.`);
+        return ordersWithItems;
+      } catch (err) {
+        console.error("Supabase trackOrder exception, falling back:", err);
+      }
+    }
+
+    // Local fallback
+    console.log("[dbService] Using LocalStorage tracking fallback.");
+    const localOrders = JSON.parse(localStorage.getItem('sparkle_orders') || '[]');
+    const matched = localOrders.filter((o: any) => {
+      const orderId = String(o.id || o.orderId || '').toLowerCase();
+      const phoneNum = String(o.phone || '').toLowerCase();
+      const custName = String(o.customer_name || o.customer?.fullName || '').toLowerCase();
+      const q = cleanQuery.toLowerCase();
+      return orderId === q || phoneNum === q || custName.includes(q);
+    });
+
+    return matched.map((ord: any) => ({
+      id: ord.id || ord.orderId,
+      customer_name: ord.customer_name || ord.customer?.fullName || 'Customer',
+      phone: ord.phone || ord.customer?.phone || '',
+      address: ord.address || ord.customer?.address || '',
+      total_amount: ord.total_amount || ord.total || 0,
+      status: ord.status || 'Pending',
+      created_at: ord.created_at || new Date().toISOString(),
+      items: ord.items || []
+    }));
+  },
+
+  /**
    * Fetch order items for an order
    */
   async getOrderItems(orderId: string) {

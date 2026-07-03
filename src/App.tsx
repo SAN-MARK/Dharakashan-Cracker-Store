@@ -17,6 +17,7 @@ import Login from './pages/Login';
 import Contact from './pages/Contact';
 import ComboBuilder from './pages/ComboBuilder';
 import BulkOrders from './pages/BulkOrders';
+import TrackOrder from './pages/TrackOrder';
 
 // Lucide Icons for Sticky Bottom Bar
 import { Home as HomeIcon, ShoppingBag, Info, Phone, MessageSquare } from 'lucide-react';
@@ -260,6 +261,10 @@ export default function App() {
 
           {currentPage === 'bulk' && (
             <BulkOrders language={language} />
+          )}
+
+          {currentPage === 'track' && (
+            <TrackOrder language={language} />
           )}
         </main>
 

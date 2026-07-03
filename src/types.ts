@@ -20,7 +20,7 @@ export interface CartItem {
   quantity: number;
 }
 
-export type Page = 'home' | 'about' | 'shop' | 'login' | 'contact' | 'combo' | 'bulk';
+export type Page = 'home' | 'about' | 'shop' | 'login' | 'contact' | 'combo' | 'bulk' | 'track';
 
 export interface UserSession {
   email: string | null;
