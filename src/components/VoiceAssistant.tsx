@@ -35,9 +35,46 @@ export default function VoiceAssistant({
   const [feedbackText, setFeedbackText] = useState('');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  const [hasGreeted, setHasGreeted] = useState(false);
+  const [hasUpsold, setHasUpsold] = useState(false);
+  const [pendingAction, setPendingAction] = useState<{ type: 'add' | 'checkout'; data: any } | null>(null);
+
   const recognitionRef = useRef<any>(null);
   const lastSpokenRef = useRef<string>('');
   const speakTimeoutRef = useRef<any>(null);
+
+  const cartRef = useRef(cart);
+  const productsRef = useRef(products);
+  const currentPageRef = useRef(currentPage);
+  const hasGreetedRef = useRef(false);
+  const hasUpsoldRef = useRef(false);
+  const pendingActionRef = useRef<any>(null);
+
+  useEffect(() => { cartRef.current = cart; }, [cart]);
+  useEffect(() => { productsRef.current = products; }, [products]);
+  useEffect(() => { currentPageRef.current = currentPage; }, [currentPage]);
+  useEffect(() => { hasGreetedRef.current = hasGreeted; }, [hasGreeted]);
+  useEffect(() => { hasUpsoldRef.current = hasUpsold; }, [hasUpsold]);
+  useEffect(() => { pendingActionRef.current = pendingAction; }, [pendingAction]);
+
+  // Convert numbers to spoken plain English word rupees for TTS consistency
+  const getSpokenPrice = (price: number): string => {
+    switch (price) {
+      case 120: return "one hundred twenty rupees";
+      case 150: return "one hundred fifty rupees";
+      case 180: return "one hundred eighty rupees";
+      case 220: return "two hundred twenty rupees";
+      case 280: return "two hundred eighty rupees";
+      case 350: return "three hundred fifty rupees";
+      case 380: return "three hundred eighty rupees";
+      case 420: return "four hundred twenty rupees";
+      case 450: return "four hundred fifty rupees";
+      case 490: return "four hundred ninety rupees";
+      case 1299: return "one thousand two hundred ninety-nine rupees";
+      case 2499: return "two thousand four hundred ninety-nine rupees";
+      default: return `${price} rupees`;
+    }
+  };
 
   // Initialize Speech Recognition & Synthesis
   useEffect(() => {
@@ -65,10 +102,10 @@ export default function VoiceAssistant({
       rec.onerror = (event: any) => {
         console.warn('Speech recognition error:', event.error);
         if (event.error === 'no-speech') {
-          speak("I didn't hear anything. Please try again.");
+          speak("I didn't hear anything. Please try again.", true);
           setTranscript('No speech detected.');
         } else if (event.error === 'not-allowed' || event.error === 'permission-denied') {
-          setErrorMessage("Microphone access was blocked. Please allow microphone permissions in your browser's address bar (click the lock/site info icon) and try again.");
+          setErrorMessage("Microphone access was blocked. Please allow microphone permissions in your browser's address bar and try again.");
           speak("Microphone access was blocked. Please allow microphone permissions in your browser's address bar and try again.");
           setTranscript('Microphone permission denied.');
         } else {
@@ -84,7 +121,7 @@ export default function VoiceAssistant({
 
       recognitionRef.current = rec;
     }
-  }, [products, cart, currentPage]); // Re-bind so event handlers have fresh closure states of cart and products
+  }, []);
 
   // Stop synthesis on unmount
   useEffect(() => {
@@ -98,7 +135,7 @@ export default function VoiceAssistant({
     };
   }, []);
 
-  const speak = (text: string) => {
+  const speak = (text: string, autoListenAfterSpeech = false) => {
     if (!window.speechSynthesis) return;
     
     // Cancel current speaking
@@ -116,6 +153,14 @@ export default function VoiceAssistant({
 
     utterance.onend = () => {
       setIsSpeaking(false);
+      if (autoListenAfterSpeech) {
+        if (speakTimeoutRef.current) {
+          clearTimeout(speakTimeoutRef.current);
+        }
+        speakTimeoutRef.current = setTimeout(() => {
+          startListening();
+        }, 150);
+      }
     };
 
     utterance.onerror = () => {
@@ -136,12 +181,9 @@ export default function VoiceAssistant({
     }
     
     try {
-      // Explicitly request microphone permission using getUserMedia
       if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
         await navigator.mediaDevices.getUserMedia({ audio: true });
       }
-      
-      // If permission is granted, start speech recognition
       recognitionRef.current.start();
     } catch (err: any) {
       console.warn('Failed to start recognition or get mic permission:', err);
@@ -152,7 +194,7 @@ export default function VoiceAssistant({
         err.message?.toLowerCase().includes('allowed');
         
       if (isPermissionDenied) {
-        setErrorMessage("Microphone access was blocked. Please allow microphone permissions in your browser's address bar (click the lock/site info icon) and try again.");
+        setErrorMessage("Microphone access was blocked. Please allow microphone permissions in your browser's address bar and try again.");
         speak("Microphone access was blocked. Please allow microphone permissions in your browser's address bar and try again.");
       } else {
         setErrorMessage(`Failed to start voice assistant: ${err.message || err}`);
@@ -175,7 +217,12 @@ export default function VoiceAssistant({
     if (isListening) {
       stopListening();
     } else {
-      startListening();
+      if (!hasGreetedRef.current) {
+        setHasGreeted(true);
+        speak("Welcome to Dharakashan Cracker Store! Are you shopping for sparklers, a big fireworks display, or a gift box this Diwali?", true);
+      } else {
+        startListening();
+      }
     }
   };
 
@@ -185,11 +232,11 @@ export default function VoiceAssistant({
     if (!q) return undefined;
 
     // 1. Exact match
-    let found = products.find((p) => p.name.toLowerCase() === q);
+    let found = productsRef.current.find((p) => p.name.toLowerCase() === q);
     if (found) return found;
 
     // 2. Contains match
-    found = products.find(
+    found = productsRef.current.find(
       (p) => p.name.toLowerCase().includes(q) || q.includes(p.name.toLowerCase())
     );
     if (found) return found;
@@ -197,7 +244,7 @@ export default function VoiceAssistant({
     // 3. Word match (at least 3 characters)
     const words = q.split(/\s+/).filter((w) => w.length >= 3);
     if (words.length > 0) {
-      found = products.find((p) => {
+      found = productsRef.current.find((p) => {
         const nameL = p.name.toLowerCase();
         return words.some((word) => nameL.includes(word));
       });
@@ -211,11 +258,11 @@ export default function VoiceAssistant({
     if (!q) return undefined;
 
     // 1. Exact match
-    let found = cart.find((item) => item.product.name.toLowerCase() === q);
+    let found = cartRef.current.find((item) => item.product.name.toLowerCase() === q);
     if (found) return found;
 
     // 2. Contains match
-    found = cart.find(
+    found = cartRef.current.find(
       (item) =>
         item.product.name.toLowerCase().includes(q) ||
         q.includes(item.product.name.toLowerCase())
@@ -225,7 +272,7 @@ export default function VoiceAssistant({
     // 3. Word match
     const words = q.split(/\s+/).filter((w) => w.length >= 3);
     if (words.length > 0) {
-      found = cart.find((item) => {
+      found = cartRef.current.find((item) => {
         const nameL = item.product.name.toLowerCase();
         return words.some((word) => nameL.includes(word));
       });
@@ -237,12 +284,12 @@ export default function VoiceAssistant({
   const processCommand = (rawTranscript: string) => {
     const t = rawTranscript.toLowerCase().trim();
 
-    // 1. Repeat
+    // 1. Repeat Command
     if (t === 'repeat' || t.includes('repeat last') || t.includes('say that again') || t.includes('repeat the last')) {
       if (lastSpokenRef.current) {
-        speak(lastSpokenRef.current);
+        speak(lastSpokenRef.current, true);
       } else {
-        speak("I haven't said anything yet.");
+        speak("I haven't said anything yet.", true);
       }
       return;
     }
@@ -254,129 +301,188 @@ export default function VoiceAssistant({
       return;
     }
 
-    // 3. Go to page
+    // 3. Language triggers
+    if (t.includes('hindi') || t.includes('hindi me') || t.includes('हिन्दी') || t.includes('हिंदी')) {
+      speak("नमस्ते! धरकाशन पटाखा स्टोर में आपका स्वागत है। क्या आप दिवाली के लिए फुलझड़ी, अनार या कोई गिफ़्ट बॉक्स ढूँढ रहे हैं?", true);
+      return;
+    }
+    if (t.includes('tamil') || t.includes('tamilil') || t.includes('தமிழ்') || t.includes('தமிழ் பேசு')) {
+      speak("வணக்கம்! தாரகாஷன் பட்டாசு கடைக்கு உங்களை வரவேற்கிறோம். இந்த தீபாவளிக்கு மத்தாப்பு, அனார் அல்லது பரிசு பெட்டி தேடுகிறீர்களா?", true);
+      return;
+    }
+
+    // 4. Emergency/Injuries Safety Guardrails
     if (
-      t.includes('go to') ||
-      t.includes('navigate to') ||
-      t.includes('open page') ||
-      t === 'home' ||
-      t === 'shop' ||
-      t === 'contact' ||
-      t === 'about' ||
-      t === 'checkout'
+      t.includes('injured') || t.includes('injury') || t.includes('burned') || t.includes('fire') || 
+      t.includes('accident') || t.includes('emergency') || t.includes('hurt') || t.includes('bleeding') || 
+      t.includes('hospital') || t.includes('ambulance') || t.includes('burn')
     ) {
+      speak("Please stop and call emergency services at one one two immediately. I cannot continue our sales conversation during an emergency.");
+      stopListening();
+      return;
+    }
+
+    // 5. Firework making / modification safety guardrail
+    if (
+      t.includes('how to make') || t.includes('make fireworks') || t.includes('make bomb') || 
+      t.includes('diy fireworks') || t.includes('make cracker') || t.includes('modify') || 
+      t.includes('strengthen') || t.includes('increase power') || t.includes('gunpowder')
+    ) {
+      speak("For safety, I cannot provide instructions on making, modifying, or increasing the power of any firework or cracker. Please only buy and use certified green crackers safely.", true);
+      return;
+    }
+
+    // 6. Banned/Illegal crackers guardrail
+    if (t.includes('banned') || t.includes('illegal') || t.includes('chinese') || t.includes('pollution')) {
+      speak("Dharakashan only sells certified PESO-approved green crackers that comply with Indian regulations. We do not sell any banned or illegal crackers.", true);
+      return;
+    }
+
+    // 7. Standard general safety precaution questions
+    if (
+      t.includes('safety') || t.includes('precaution') || t.includes('safe') || 
+      t.includes('how to light') || t.includes('adult supervision') || t.includes('dud')
+    ) {
+      speak("Always light fireworks in open outdoor spaces, keep water nearby, ensure adult supervision for children, never relight duds, and maintain safe distance after lighting.", true);
+      return;
+    }
+
+    // 8. Confirmation flow logic for pending actions
+    if (pendingActionRef.current) {
+      const isYes = t.includes('yes') || t.includes('sure') || t.includes('confirm') || t.includes('add it') || 
+                    t.includes('yeah') || t.includes('ok') || t.includes('please') || t === 'yep' || t === 'y' || t.includes('add');
+      const isNo = t.includes('no') || t.includes('cancel') || t.includes("don't") || t.includes('stop') || t === 'nope' || t === 'n';
+
+      if (pendingActionRef.current.type === 'add') {
+        if (isYes) {
+          const { product, qty } = pendingActionRef.current.data;
+          addToCart(product, qty);
+          setPendingAction(null);
+
+          let totalItemsInCart = cartRef.current.reduce((acc, item) => acc + item.quantity, 0) + qty;
+          if (totalItemsInCart >= 3 && !hasUpsoldRef.current) {
+            setHasUpsold(true);
+            speak(`Added ${qty} pack of ${product.name} to your cart. Since you are buying multiple items, how about our Sparkle Shubh Labh Combo Box for one thousand two hundred ninety-nine rupees? It's a perfect family assortment!`, true);
+          } else {
+            speak(`Added ${qty} pack of ${product.name} to your cart. Would you like to add anything else, or are you ready to checkout?`, true);
+          }
+          return;
+        } else if (isNo) {
+          setPendingAction(null);
+          speak("Alright, I won't add that. What else can I help you find?", true);
+          return;
+        }
+      } else if (pendingActionRef.current.type === 'checkout') {
+        if (isYes) {
+          setPendingAction(null);
+          setIsCartOpen(true);
+          setCurrentPage('shop');
+          speak("Opening your shopping cart now so you can complete your details. Happy Diwali!", false);
+          return;
+        } else if (isNo) {
+          setPendingAction(null);
+          speak("No problem. Let me know when you are ready to complete your purchase.", true);
+          return;
+        }
+      }
+    }
+
+    // 9. Navigation commands
+    if (t.includes('go to') || t.includes('navigate to') || t.includes('open page') || t === 'home' || t === 'shop' || t === 'contact' || t === 'about') {
       if (t.includes('home') || t === 'home') {
         setCurrentPage('home');
-        speak("Navigating to home page. Welcome to Dharakashan Cracker Store!");
+        speak("Navigating to home page. Welcome to Dharakashan Cracker Store!", true);
         return;
       }
       if (t.includes('shop') || t.includes('store') || t === 'shop') {
         setCurrentPage('shop');
-        speak("Navigating to our shop page. Explore our safe, green crackers catalogue.");
+        speak("Navigating to our shop page. Explore our safe, green crackers catalogue.", true);
         return;
       }
       if (t.includes('about') || t === 'about') {
         setCurrentPage('about');
-        speak("Navigating to about page. Learn about our Form-24 complaint fireworks quality.");
+        speak("Navigating to about page. Learn about our Form-24 compliant fireworks quality.", true);
         return;
       }
       if (t.includes('contact') || t === 'contact') {
         setCurrentPage('contact');
-        speak("Navigating to contact page. Our customer helpline is 8 6 6 8 0 4 5 5 1 9.");
-        return;
-      }
-      if (t.includes('checkout') || t.includes('cart') || t === 'checkout') {
-        setIsCartOpen(true);
-        speak("Opening your shopping cart for checkout.");
+        speak("Navigating to contact page. Our customer helpline is 8 6 6 8 0 4 5 5 1 9.", true);
         return;
       }
     }
 
-    // 4. Read products / What's available
+    // 10. List/Show Available products
     if (
-      t.includes('read products') ||
-      t.includes('what is available') ||
-      t.includes("what's available") ||
-      t.includes('list products') ||
-      t.includes('show available')
+      t.includes('read products') || t.includes('what is available') || t.includes("what's available") || 
+      t.includes('list products') || t.includes('show available') || t.includes('what do you have') || 
+      t.includes('catalog') || t.includes('products')
     ) {
-      if (products.length === 0) {
-        speak("There are no products loaded at the moment. Please try again shortly.");
-        return;
-      }
-      const listToRead = products.slice(0, 5);
-      let listSpeech = `We have ${products.length} crackers in stock. Here are the top 5 available: `;
-      listToRead.forEach((p, idx) => {
-        listSpeech += `${idx + 1}, ${p.name} for ${p.price} rupees. `;
-      });
-      listSpeech += "To purchase, say: Add, followed by the product name, to cart.";
-      speak(listSpeech);
+      speak("We have Sparklers, Rockets, Flower Pots, Ground Chakras, and Gift Combos. For example, Imperial Golden Sparklers for one hundred eighty rupees or Sparkle Shubh Labh Combo Box for one thousand two hundred ninety-nine rupees. What are you looking for?", true);
       return;
     }
 
-    // 5. Read my cart
-    if (
-      t.includes('read my cart') ||
-      t.includes('read cart') ||
-      t.includes('what is in my cart') ||
-      t.includes("what's in my cart") ||
-      t.includes('show cart')
-    ) {
-      if (cart.length === 0) {
-        speak("Your shopping cart is empty. You can say: Go to shop, to browse our products.");
+    // 11. Celebration recommendation triggers
+    if (t.includes('sparkler') || t.includes('sparklers') || t.includes('kids') || t.includes('children') || t.includes('safe') || t.includes('phuljhari')) {
+      speak("For kids and safe celebrations, I recommend our Imperial Golden Sparklers for one hundred eighty rupees, or Deluxe Spinning Ground Chakra for one hundred fifty rupees. Both are certified green crackers. Would you like me to add either to your cart?", true);
+      return;
+    }
+    if (t.includes('display') || t.includes('sky') || t.includes('skyshot') || t.includes('rocket') || t.includes('rockets') || t.includes('anar') || t.includes('fountain') || t.includes('flower pot') || t.includes('flowerpot') || t.includes('pots')) {
+      speak("For a majestic display, I recommend Glittering Star Sky-Shot Rocket for four hundred ninety rupees, or Royal Multi-Color Flower Pots for three hundred fifty rupees. Both are PESO approved. Would you like to add one?", true);
+      return;
+    }
+    if (t.includes('gift') || t.includes('gifting') || t.includes('family') || t.includes('box') || t.includes('combos') || t.includes('combo')) {
+      speak("Our top family box is the Sparkle Shubh Labh Combo Box for one thousand two hundred ninety-nine rupees, or the luxury Grand Emperor Celebration Box for two thousand four hundred ninety-nine rupees. They are safe, PESO-approved green crackers. Would you like to add one to your cart?", true);
+      return;
+    }
+    if (t.includes('sound') || t.includes('crackers') || t.includes('loud') || t.includes('lari') || t.includes('garland') || t.includes('bijli')) {
+      speak("We have Royal Red Fort one hundred Lari Garland for four hundred fifty rupees, and Safe Eco Bijli Crackers for one hundred twenty rupees. Shall I add one of these green crackers?", true);
+      return;
+    }
+
+    // 12. Read my cart
+    if (t.includes('read my cart') || t.includes('read cart') || t.includes('what is in my cart') || t.includes("what's in my cart") || t.includes('show cart')) {
+      if (cartRef.current.length === 0) {
+        speak("Your shopping cart is empty. What would you like to add? We have sparklers, flower pots, rockets, and gift boxes.", true);
         return;
       }
-      let cartSpeech = `You have ${cart.length} unique item${cart.length > 1 ? 's' : ''} in your cart: `;
       let total = 0;
-      cart.forEach((item) => {
-        const itemTotal = getItemTotalPrice(item.product, item.quantity);
+      const cartItemsText = cartRef.current.slice(0, 3).map((item) => {
+        const itemTotal = item.product.price * item.quantity;
         total += itemTotal;
-        cartSpeech += `${item.quantity} packs of ${item.product.name} for ${itemTotal} rupees. `;
-      });
-      cartSpeech += `Your grand total is ${total} rupees. Say: Go to checkout, to complete placing your order.`;
-      speak(cartSpeech);
+        return `${item.quantity} pack of ${item.product.name}`;
+      }).join(', and ');
+
+      if (cartRef.current.length > 3) {
+        // Calculate full total for all items beyond first 3 too
+        total = cartRef.current.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
+      }
+
+      const cartSpeech = `You have ${cartItemsText} in your cart. Your total is ${getSpokenPrice(total)}. Are you ready to checkout?`;
+      speak(cartSpeech, true);
+      setPendingAction({ type: 'checkout', data: {} });
       return;
     }
 
-    // 6. Add [product name] to cart
-    const addRegex = /(?:add)\s+(.+?)\s+(?:to cart|to bag|in cart|cart)/i;
-    const addSimpleRegex = /(?:add)\s+(.+)/i;
+    // 13. Add [product name] to cart / buy [product name] / put [product name] in cart
+    const addRegex = /(?:add|buy|put|get)\s+(.+?)\s+(?:to cart|to bag|in cart|cart|bag)/i;
+    const addSimpleRegex = /(?:add|buy|put|get)\s+(.+)/i;
     const addMatch = t.match(addRegex) || t.match(addSimpleRegex);
 
     if (addMatch && addMatch[1]) {
       const productNameQuery = addMatch[1].trim();
-      // Skip helper keywords that might trigger accidental matches
-      if (productNameQuery !== 'cart' && productNameQuery !== 'bag' && productNameQuery !== 'products') {
+      if (productNameQuery !== 'cart' && productNameQuery !== 'bag' && productNameQuery !== 'products' && productNameQuery !== 'yes' && productNameQuery !== 'no') {
         const product = findProductFuzzy(productNameQuery);
         if (product) {
-          addToCart(product, 1);
-          // Calculate new total
-          const tempCart = [...cart];
-          const existIdx = tempCart.findIndex((item) => item.product.id === product.id);
-          if (existIdx >= 0) {
-            tempCart[existIdx].quantity += 1;
-          } else {
-            tempCart.push({ product, quantity: 1 });
-          }
-          const newTotal = tempCart.reduce(
-            (sum, item) => sum + getItemTotalPrice(item.product, item.quantity),
-            0
-          );
-          speak(
-            `Added 1 pack of ${product.name} to your cart. Your cart grand total is now ${newTotal} rupees.`
-          );
-        } else {
-          speak(
-            `Sorry, I couldn't find any cracker matching "${productNameQuery}". Say "read products" to hear the list of available items.`
-          );
+          setPendingAction({ type: 'add', data: { product, qty: 1 } });
+          speak(`Would you like me to add one pack of ${product.name} for ${getSpokenPrice(product.price)} to your cart?`, true);
+          return;
         }
-        return;
       }
     }
 
-    // 7. Remove [product name] from cart
-    const removeRegex = /(?:remove|delete)\s+(.+?)\s+(?:from cart|from bag|cart|bag)/i;
-    const removeSimpleRegex = /(?:remove|delete)\s+(.+)/i;
+    // 14. Remove [product name] from cart
+    const removeRegex = /(?:remove|delete|take out)\s+(.+?)\s+(?:from cart|from bag|cart|bag)/i;
+    const removeSimpleRegex = /(?:remove|delete|take out)\s+(.+)/i;
     const removeMatch = t.match(removeRegex) || t.match(removeSimpleRegex);
 
     if (removeMatch && removeMatch[1]) {
@@ -384,38 +490,29 @@ export default function VoiceAssistant({
       const cartItem = findCartItemFuzzy(productNameQuery);
       if (cartItem) {
         removeFromCart(cartItem.product.id);
-        speak(`Removed ${cartItem.product.name} from your cart.`);
+        speak(`Removed ${cartItem.product.name} from your cart.`, true);
       } else {
-        speak(`I couldn't find "${productNameQuery}" in your shopping cart.`);
+        speak(`I couldn't find "${productNameQuery}" in your shopping cart.`, true);
       }
       return;
     }
 
-    // 8. Search for [product]
-    const searchRegex = /(?:search for|search|find|filter by|filter)\s+(.+)/i;
-    const searchMatch = t.match(searchRegex);
-    if (searchMatch && searchMatch[1]) {
-      const query = searchMatch[1].trim();
-      setCurrentPage('shop');
-      setSearchFilters({ category: 'all', priceRange: 'all', searchTerm: query });
-      
-      const matched = products.filter(
-        (p) =>
-          p.name.toLowerCase().includes(query) ||
-          p.description.toLowerCase().includes(query)
-      );
-
-      speak(
-        `Searching for ${query}. Found ${matched.length} cracker${
-          matched.length === 1 ? '' : 's'
-        } matching your request.`
-      );
+    // 15. Checkout / Complete purchase
+    if (t.includes('checkout') || t.includes('complete purchase') || t.includes('pay') || t.includes('order') || t.includes('ready') || t.includes('finish')) {
+      if (cartRef.current.length === 0) {
+        speak("Your cart is empty. Please add some crackers before checking out! What are you shopping for?", true);
+        return;
+      }
+      const total = cartRef.current.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
+      speak(`Are you ready to complete your checkout for ${getSpokenPrice(total)}?`, true);
+      setPendingAction({ type: 'checkout', data: {} });
       return;
     }
 
-    // Default unrecognized command fallback
+    // Default Fallback
     speak(
-      `I heard: "${rawTranscript}". Try saying commands like: "Read products", "Add magic sparklers to cart", "Read my cart", or "Go to shop".`
+      `I heard you say: "${rawTranscript}". Try asking things like: "Show sparklers for kids", "Add Royal Multi-Color Flower Pots", or "Read my cart".`,
+      true
     );
   };
 
