@@ -151,11 +151,12 @@ export default function CartDrawer({
       address: address || "",
       total_amount: finalTotal,
       status: 'Confirmed'
-   }, cart.map(item => ({
+    }, cart.map(item => ({
+  // This regex removes the 'item-' prefix and '-0' suffix
       productId: item.product.id.toString().replace(/[^0-9a-fA-F-]/g, ''),
       quantity: item.quantity,
-     price: item.product.price
-   })));
+      price: item.product.price
+    })));
 
     // Clear the main application cart state only on absolute success
     clearCart();
