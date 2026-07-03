@@ -219,7 +219,7 @@ export default function VoiceAssistant({
     } else {
       if (!hasGreetedRef.current) {
         setHasGreeted(true);
-        speak("Welcome to Dharakashan Cracker Store! Are you shopping for sparklers, a big fireworks display, or a gift box this Diwali?", true);
+        speak("Welcome to Dharakashan Cracker Store! Vanakkam! Namaste! Are you shopping for sparklers, a big fireworks display, or a gift box this Diwali?", true);
       } else {
         startListening();
       }
@@ -317,7 +317,7 @@ export default function VoiceAssistant({
       t.includes('accident') || t.includes('emergency') || t.includes('hurt') || t.includes('bleeding') || 
       t.includes('hospital') || t.includes('ambulance') || t.includes('burn')
     ) {
-      speak("Please stop and call emergency services at one one two immediately. I cannot continue our sales conversation during an emergency.");
+      speak("Please call one one two now. தயவுசெய்து இப்போதே 112-ஐ அழைக்கவும். कृपया अभी 112 पर कॉल करें।");
       stopListening();
       return;
     }
