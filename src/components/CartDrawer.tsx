@@ -80,53 +80,15 @@ export default function CartDrawer({
     window.open(`https://wa.me/${waNumber}?text=${message}`, '_blank');
   };
 
-  const submitOrderToSheet = async (customerId: string) => {
+  const saveOrderToSupabase = async (customerId: string) => {
     setCheckoutError(null);
-        // Submit each cart item individually to Sheet.best
-    for (let i = 0; i < cart.length; i++) {
-      const item = cart[i];
-      const sn = `P${String(i + 1).padStart(3, '0')}`;
-      
-   // Calculate item discount percentage
-      const discountPercent = item.product.originalPrice
-        ? Math.round(((item.product.originalPrice - item.product.price) / item.product.originalPrice) * 100)
-        : 0;
 
-      const orderData = {
-        "S/N": sn,
-        "Full Name": fullName || "",
-        "Email": email || "",
-        "Contact Number": phone || "",
-        "Delivery & Billing Address *": address || "",
-        "Preferred Delivery Date": deliveryDate || "",
-        "Product Name": item.quantity > 1 ? `${item.product.name} (Qty: ${item.quantity})` : item.product.name,
-        "Category": item.product.category || "General",
-        "Price (INR)": item.product.price || 0,
-        "Original Price (INR)": item.product.originalPrice || item.product.price || 0,
-        "Discount %": discountPercent,
-        "Total Price": finalTotal || 0,
-        "Customer ID": customerId
-      };
-
-      // Output exact payload as required for verification
-      console.log("Submitting order payload to Sheet.best:", JSON.stringify(orderData));
-
-      const response = await fetch('https://api.sheetbest.com/sheets/38f7b6d0-0cfe-405c-be6a-51bd77c8973b', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(orderData),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to submit item to spreadsheet: ${item.product.name}`);
-      }
-    }
+    // Sanitize the ID using orderId.replace('item-', '') to ensure only raw UUID is sent
+    const sanitizedOrderId = customerId.replace('item-', '');
 
     // Create persistent record in LocalStorage for durability/logs
     const orderRecord = {
-      orderId: customerId,
+      orderId: sanitizedOrderId,
       timestamp: new Date().toISOString(),
       customer: { fullName, email, phone, address, deliveryDate },
       items: cart.map(item => ({
@@ -145,15 +107,14 @@ export default function CartDrawer({
 
     // Save to Supabase (dbService.saveOrder now throws on error)
     await dbService.saveOrder({
-      id: customerId,
+      id: sanitizedOrderId,
       customer_name: fullName || "Anonymous",
       phone: phone || "",
       address: address || "",
       total_amount: finalTotal,
       status: 'Confirmed'
     }, cart.map(item => ({
-  // This regex removes the 'item-' prefix and '-0' suffix
-      productId: item.product.id.toString().replace(/[^0-9a-fA-F-]/g, ''),
+      productId: item.product.id,
       quantity: item.quantity,
       price: item.product.price
     })));
@@ -172,13 +133,14 @@ export default function CartDrawer({
 
     // Generate valid UUID for both Order and Customer ID
     const generatedCustomerId = generateUUID();
-    setOrderId(generatedCustomerId);
+    const sanitizedOrderId = generatedCustomerId.replace('item-', '');
+    setOrderId(sanitizedOrderId);
     setCheckoutError(null);
 
     if (paymentMode === 'cod') {
       setSubmitting(true);
       try {
-        await submitOrderToSheet(generatedCustomerId);
+        await saveOrderToSupabase(sanitizedOrderId);
         alert("Order Confirmed via COD");
       } catch (err: any) {
         console.error('Checkout error:', err);
@@ -206,11 +168,11 @@ export default function CartDrawer({
           handler: async function (response: any) {
             try {
               alert("Payment Successful, Order Placed");
-              await submitOrderToSheet(generatedCustomerId);
+              await saveOrderToSupabase(sanitizedOrderId);
             } catch (err: any) {
               console.error('Error submitting order post-payment:', err);
               setCheckoutError(err.message || 'Payment succeeded, but there was an issue saving your order. Please contact support.');
-              alert('Payment succeeded, but there was an issue saving your order. Please contact support with Customer ID: ' + generatedCustomerId + ' and details: ' + (err.message || ''));
+              alert('Payment succeeded, but there was an issue saving your order. Please contact support with Customer ID: ' + sanitizedOrderId + ' and details: ' + (err.message || ''));
             }
           },
           prefill: {

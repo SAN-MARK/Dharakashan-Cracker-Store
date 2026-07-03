@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { Product } from '../types';
 import { PRODUCTS } from '../data/products';
+import { generateUUID } from './uuid';
 
 const getSupabaseConfig = () => {
   const url = import.meta.env.VITE_SUPABASE_URL || '';
@@ -546,8 +547,8 @@ export const dbService = {
           throw orderErr;
         }
 
-        const orderItemsPayload = items.map((item, idx) => ({
-          id: `item-${order.id}-${idx}`,
+        const orderItemsPayload = items.map((item) => ({
+          id: generateUUID(),
           order_id: order.id,
           product_id: item.productId || item.product?.id,
           quantity: item.quantity,
