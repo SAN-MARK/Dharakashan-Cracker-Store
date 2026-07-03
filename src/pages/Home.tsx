@@ -356,7 +356,7 @@ export default function Home({
               <div className="w-full h-28 bg-[#FFF8F0] rounded-xl mb-4 flex items-center justify-center relative overflow-hidden">
                 <img
                   src={cat.image}
-                  alt={cat.name}
+                  alt={`${cat.name} Category - Browse all premium ${cat.name} products`}
                   referrerPolicy="no-referrer"
                   className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                 />
@@ -411,7 +411,7 @@ export default function Home({
                 <div className="relative aspect-4/3 rounded-xl overflow-hidden bg-[#FFF8F0] mb-3.5 border border-[#D4AF37]/5">
                   <img
                     src={product.image}
-                    alt={product.name}
+                    alt={`${product.name} - ${product.description}`}
                     referrerPolicy="no-referrer"
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   />

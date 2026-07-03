@@ -93,6 +93,8 @@ export interface BulkOrderRequest {
 
 // Core Database Access Helpers that respect Supabase or fall back to simulated LocalStorage
 export const dbService = {
+  hasFallenBack: !isSupabaseConfigured,
+
   /**
    * Check delivery serviceable status by pincode or district name
    */
@@ -250,12 +252,13 @@ export const dbService = {
           .order('id', { ascending: true });
 
         if (error) {
-          console.error("Supabase products fetch error, using local fallback:", error);
+          console.error("Supabase products fetch error:", error);
           throw error;
         }
 
         if (data && data.length > 0) {
           console.log(`Successfully loaded ${data.length} products from Supabase!`);
+          this.hasFallenBack = false;
           return data.map((item: any) => ({
             id: String(item.id),
             name: item.name,
@@ -277,11 +280,16 @@ export const dbService = {
           const seedResult = await this.seedSupabase();
           if (seedResult.success) {
             // Re-fetch after seed
-            const { data: refetchedData } = await supabase
+            const { data: refetchedData, error: refetchErr } = await supabase
               .from('products')
               .select('*')
               .order('id', { ascending: true });
+            if (refetchErr) {
+              console.error("Supabase products re-fetch error after seed:", refetchErr);
+              throw refetchErr;
+            }
             if (refetchedData && refetchedData.length > 0) {
+              this.hasFallenBack = false;
               return refetchedData.map((item: any) => ({
                 id: String(item.id),
                 name: item.name,
@@ -303,11 +311,14 @@ export const dbService = {
         }
       } catch (err) {
         console.error("Supabase products fetch or auto-seed exception, using local fallback:", err);
+        this.hasFallenBack = true;
+        return PRODUCTS;
       }
     }
 
     // Default Fallback
     console.log("Using static products list fallback.");
+    this.hasFallenBack = true;
     return PRODUCTS;
   },
 
@@ -540,35 +551,33 @@ export const dbService = {
     return [];
   },
 
-/**
+  /**
    * Save a newly placed order & order items to Supabase
    */
-  async saveOrder(order: { customer_name: string; phone: string; address: string; total_amount: number; status: string }, items: any[]) {
+  async saveOrder(order: { id: string; customer_name: string; phone: string; address: string; total_amount: number; status: string }, items: any[]) {
     if (isSupabaseConfigured && supabase) {
       try {
         console.log("Saving order to Supabase...");
-        const { data: orderData, error: orderErr } = await supabase
+        const { error: orderErr } = await supabase
           .from('orders')
           .insert([{
+            id: order.id,
             customer_name: order.customer_name,
             phone: order.phone,
             address: order.address,
             total_amount: order.total_amount,
             status: order.status,
             created_at: new Date().toISOString()
-          }])
-          .select()
-          .single();
+          }]);
 
         if (orderErr) {
           console.error("Supabase saveOrder error:", orderErr);
           throw orderErr;
         }
 
-        const newOrderId = orderData.id;
-
-        const orderItemsPayload = items.map((item) => ({
-          order_id: newOrderId,
+        const orderItemsPayload = items.map((item, idx) => ({
+          id: `item-${order.id}-${idx}`,
+          order_id: order.id,
           product_id: item.productId || item.product?.id,
           quantity: item.quantity,
           price: Number(item.price || item.product?.price || 0)
@@ -586,9 +595,12 @@ export const dbService = {
         console.log("Order saved to Supabase successfully!");
         return true;
       } catch (err) {
-        console.error("Exception saving order to Supabase, falling back safely", err);
+        console.error("Exception saving order to Supabase", err);
+        throw err;
       }
+    } else {
+      console.warn("Supabase is not configured. Falling back to local storage order tracking.");
+      return true;
     }
-    return false;
   }
-  };
+};

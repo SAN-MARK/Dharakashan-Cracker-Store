@@ -274,7 +274,7 @@ export default function Shop({
           {/* Top Controls Banner (Search, Sort & Mobile Filters button) */}
           <div className="bg-white rounded-2xl p-4 border border-[#D4AF37]/15 shadow-sm flex flex-col sm:flex-row gap-3 items-center justify-between">
             {/* Count Indicator */}
-            <div className="text-xs text-slate-500 text-center sm:text-left">
+            <div className="text-xs text-slate-500 text-center sm:text-left" aria-live="polite">
               Showing <b className="text-[#7A0C1E] font-mono">{displayedProducts.length}</b> of{' '}
               <b className="text-slate-700 font-mono">{sortedProducts.length}</b> verified products
             </div>
@@ -374,7 +374,7 @@ export default function Shop({
                     <div className="relative aspect-4/3 rounded-xl overflow-hidden bg-[#FFF8F0] mb-3 border border-[#D4AF37]/5">
                       <img
                         src={product.image}
-                        alt={product.name}
+                        alt={`${product.name} - ${product.description}`}
                         referrerPolicy="no-referrer"
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       />

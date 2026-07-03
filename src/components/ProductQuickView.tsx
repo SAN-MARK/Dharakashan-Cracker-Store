@@ -60,6 +60,7 @@ export default function ProductQuickView({
           <button
             onClick={onClose}
             className="p-1 rounded-full hover:bg-white/10 text-white/80 hover:text-white transition-all cursor-pointer"
+            aria-label="Close Product Details"
           >
             <X className="w-5 h-5" />
           </button>
@@ -71,7 +72,7 @@ export default function ProductQuickView({
           <div className="relative aspect-16/9 rounded-2xl overflow-hidden bg-slate-100 border border-slate-200">
             <img
               src={product.image}
-              alt={product.name}
+              alt={`${product.name} - ${product.description}`}
               referrerPolicy="no-referrer"
               className="w-full h-full object-cover"
             />
@@ -183,6 +184,7 @@ export default function ProductQuickView({
                     <button
                       onClick={() => setQuantity(prev => Math.max(1, prev - 1))}
                       className="px-3 hover:bg-slate-100 active:bg-slate-200 text-slate-600 font-bold transition-all"
+                      aria-label="Decrease quantity"
                     >
                       -
                     </button>
@@ -192,6 +194,7 @@ export default function ProductQuickView({
                     <button
                       onClick={() => setQuantity(prev => prev + 1)}
                       className="px-3 hover:bg-slate-100 active:bg-slate-200 text-slate-600 font-bold transition-all"
+                      aria-label="Increase quantity"
                     >
                       +
                     </button>

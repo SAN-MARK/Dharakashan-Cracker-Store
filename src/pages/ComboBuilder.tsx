@@ -199,7 +199,7 @@ export default function ComboBuilder({ addToCart, isLoggedIn, setCurrentPage, la
                       <div className="w-12 h-12 rounded-lg bg-slate-100 overflow-hidden flex-shrink-0 border border-slate-100">
                         <img
                           src={product.image}
-                          alt={product.name}
+                          alt={`${product.name} - ${product.description}`}
                           referrerPolicy="no-referrer"
                           className="w-full h-full object-cover"
                         />

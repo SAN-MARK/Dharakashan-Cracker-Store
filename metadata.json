@@ -1,6 +1,6 @@
 {
   "name": "Dharakshan Cracker Store",
   "description": "A premium, fully responsive e-commerce website for Diwali firecrackers, featuring high-quality products, category filters, and a festive user experience.",
-  "requestFramePermissions": [],
+  "requestFramePermissions": ["microphone"],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

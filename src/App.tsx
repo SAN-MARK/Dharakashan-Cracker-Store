@@ -4,6 +4,7 @@ import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import CartDrawer from './components/CartDrawer';
 import ProductQuickView from './components/ProductQuickView';
+import VoiceAssistant from './components/VoiceAssistant';
 import { Language } from './lib/translations';
 import { dbService, isSupabaseConfigured } from './lib/supabase';
 
@@ -465,6 +466,19 @@ export default function App() {
             setSelectedProduct(null);
             handleNavigatePage('login');
           }}
+        />
+
+        {/* Voice Assistant Module */}
+        <VoiceAssistant
+          currentPage={currentPage}
+          setCurrentPage={handleNavigatePage}
+          cart={cart}
+          addToCart={addToCart}
+          removeFromCart={removeFromCart}
+          products={products}
+          searchFilters={searchFilters}
+          setSearchFilters={setSearchFilters}
+          setIsCartOpen={setIsCartOpen}
         />
 
         {/* ================= FLOATING TOAST NOTIFICATION ================= */}

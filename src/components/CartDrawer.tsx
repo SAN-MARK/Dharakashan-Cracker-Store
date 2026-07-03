@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { X, Plus, Minus, Trash2, CheckCircle, Flame, ShieldAlert, ShoppingBag, MessageCircle } from 'lucide-react';
 import { CartItem, Product } from '../types';
 import { getItemUnitPrice, getItemTotalPrice } from '../lib/pricing';
-import { dbService } from '../lib/supabase';
+import { dbService, isSupabaseConfigured } from '../lib/supabase';
+import { generateUUID } from '../lib/uuid';
 
 interface CartDrawerProps {
   isOpen: boolean;
@@ -51,6 +52,7 @@ export default function CartDrawer({
   const [paymentMode, setPaymentMode] = useState<'cod' | 'online'>('cod');
   const [submitting, setSubmitting] = useState(false);
   const [orderId, setOrderId] = useState('');
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
@@ -79,6 +81,7 @@ export default function CartDrawer({
   };
 
   const submitOrderToSheet = async (customerId: string) => {
+    setCheckoutError(null);
     // Submit each cart item individually to Sheet.best
     for (let i = 0; i < cart.length; i++) {
       const item = cart[i];
@@ -117,7 +120,7 @@ export default function CartDrawer({
       });
 
       if (!response.ok) {
-        throw new Error(`Failed to submit item: ${item.product.name}`);
+        throw new Error(`Failed to submit item to spreadsheet: ${item.product.name}`);
       }
     }
 
@@ -140,26 +143,21 @@ export default function CartDrawer({
     existingOrders.unshift(orderRecord);
     localStorage.setItem('sparkle_orders', JSON.stringify(existingOrders));
 
-   // Save to Supabase — now surfaces real errors instead of silently swallowing them
-    try {
-      await dbService.saveOrder({
-        customer_name: fullName || "Anonymous",
-        phone: phone || "",
-        address: address || "",
-        total_amount: finalTotal,
-        status: 'Confirmed'
-      }, cart.map(item => ({
-        productId: item.product.id,
-        quantity: item.quantity,
-        price: item.product.price
-      })));
-      console.log("✅ Order successfully saved to Supabase:", customerId);
-    } catch (dbErr: any) {
-      console.error("❌ Failed to persist order to Supabase:", dbErr);
-      alert("Warning: your order was placed, but saving to our database failed. Error: " + (dbErr?.message || JSON.stringify(dbErr)));
-    }
+    // Save to Supabase (dbService.saveOrder now throws on error)
+    await dbService.saveOrder({
+      id: customerId,
+      customer_name: fullName || "Anonymous",
+      phone: phone || "",
+      address: address || "",
+      total_amount: finalTotal,
+      status: 'Confirmed'
+    }, cart.map(item => ({
+      productId: item.product.id,
+      quantity: item.quantity,
+      price: item.product.price
+    })));
 
-    // Clear the main application cart state
+    // Clear the main application cart state only on absolute success
     clearCart();
     setCheckoutStep('success');
   };
@@ -171,18 +169,19 @@ export default function CartDrawer({
       return;
     }
 
-    // Use Math.random().toString(36).substr(2, 9) to generate a unique "Customer ID"
-    const generatedCustomerId = Math.random().toString(36).substr(2, 9);
+    // Generate valid UUID for both Order and Customer ID
+    const generatedCustomerId = generateUUID();
     setOrderId(generatedCustomerId);
+    setCheckoutError(null);
 
     if (paymentMode === 'cod') {
       setSubmitting(true);
       try {
-        alert("Order Confirmed via COD");
         await submitOrderToSheet(generatedCustomerId);
-      } catch (err) {
+        alert("Order Confirmed via COD");
+      } catch (err: any) {
         console.error('Checkout error:', err);
-        alert('There was an issue processing your order with our spreadsheet system. Please try again or contact support.');
+        setCheckoutError(err.message || 'There was an issue processing your order. Please try again.');
       } finally {
         setSubmitting(false);
       }
@@ -207,9 +206,10 @@ export default function CartDrawer({
             try {
               alert("Payment Successful, Order Placed");
               await submitOrderToSheet(generatedCustomerId);
-            } catch (err) {
+            } catch (err: any) {
               console.error('Error submitting order post-payment:', err);
-              alert('Payment succeeded, but there was an issue saving your order. Please contact support with Customer ID: ' + generatedCustomerId);
+              setCheckoutError(err.message || 'Payment succeeded, but there was an issue saving your order. Please contact support.');
+              alert('Payment succeeded, but there was an issue saving your order. Please contact support with Customer ID: ' + generatedCustomerId + ' and details: ' + (err.message || ''));
             }
           },
           prefill: {
@@ -228,9 +228,9 @@ export default function CartDrawer({
         });
         rzp.open();
         setSubmitting(false);
-      } catch (err) {
+      } catch (err: any) {
         console.error('Razorpay initialization error:', err);
-        alert('Failed to initialize online payment modal. Please try again or choose COD.');
+        setCheckoutError(err.message || 'Failed to initialize online payment modal. Please try again or choose COD.');
         setSubmitting(false);
       }
     }
@@ -419,14 +419,26 @@ export default function CartDrawer({
                 Festive Shipping Coordinates
               </h3>
 
+              {checkoutError && (
+                <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded-xl flex items-start gap-2 text-xs" id="checkout-error-banner">
+                  <ShieldAlert className="w-4.5 h-4.5 text-red-500 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-bold">Checkout Failed</p>
+                    <p>{checkoutError}</p>
+                  </div>
+                </div>
+              )}
+
               <div className="space-y-3 text-left">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                  <label htmlFor="checkout-fullName" className="block text-xs font-bold text-slate-700 mb-1">
                     Your Full Name *
                   </label>
                   <input
+                    id="checkout-fullName"
                     type="text"
                     required
+                    aria-required="true"
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     placeholder="Enter your name"
@@ -436,12 +448,14 @@ export default function CartDrawer({
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                    <label htmlFor="checkout-email" className="block text-xs font-bold text-slate-700 mb-1">
                       Email Address *
                     </label>
                     <input
+                      id="checkout-email"
                       type="email"
                       required
+                      aria-required="true"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="name@email.com"
@@ -449,12 +463,14 @@ export default function CartDrawer({
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                    <label htmlFor="checkout-phone" className="block text-xs font-bold text-slate-700 mb-1">
                       Contact Number *
                     </label>
                     <input
+                      id="checkout-phone"
                       type="tel"
                       required
+                      aria-required="true"
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
                       placeholder="e.g. 9876543210"
@@ -464,11 +480,13 @@ export default function CartDrawer({
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                  <label htmlFor="checkout-address" className="block text-xs font-bold text-slate-700 mb-1">
                     Delivery & Billing Address *
                   </label>
                   <textarea
+                    id="checkout-address"
                     required
+                    aria-required="true"
                     rows={3}
                     value={address}
                     onChange={(e) => setAddress(e.target.value)}
@@ -478,12 +496,14 @@ export default function CartDrawer({
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                  <label htmlFor="checkout-deliveryDate" className="block text-xs font-bold text-slate-700 mb-1">
                     Preferred Delivery Date *
                   </label>
                   <input
+                    id="checkout-deliveryDate"
                     type="date"
                     required
+                    aria-required="true"
                     value={deliveryDate}
                     onChange={(e) => setDeliveryDate(e.target.value)}
                     min="2026-10-25"
@@ -625,6 +645,18 @@ export default function CartDrawer({
               <span className="font-mono font-bold text-slate-800 text-sm">₹{subtotal}</span>
             </div>
             
+            {dbService.hasFallenBack && (
+              <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded-xl flex items-start gap-2 text-xs" id="store-unavailable-banner">
+                <ShieldAlert className="w-4.5 h-4.5 text-red-500 shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-bold">Store temporarily unavailable</p>
+                  <p className="text-[11px] mt-0.5 text-red-600/90">
+                    We are currently experiencing database connectivity issues. Checkout is temporarily disabled. Please try again later.
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* WhatsApp Enquiry Button */}
             <button
               onClick={handleWhatsAppCartEnquiry}
@@ -643,8 +675,13 @@ export default function CartDrawer({
                 <Trash2 className="w-4 h-4" />
               </button>
               <button
-                onClick={() => setCheckoutStep('details')}
-                className="flex-1 bg-[#7A0C1E] hover:bg-[#911327] text-[#D4AF37] font-sans font-bold text-sm py-3 px-4 rounded-xl shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer flex items-center justify-center gap-1.5 active:scale-98"
+                onClick={() => !dbService.hasFallenBack && setCheckoutStep('details')}
+                disabled={dbService.hasFallenBack}
+                className={`flex-1 font-sans font-bold text-sm py-3 px-4 rounded-xl shadow-md transition-all duration-200 flex items-center justify-center gap-1.5 ${
+                  dbService.hasFallenBack
+                    ? 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none'
+                    : 'bg-[#7A0C1E] hover:bg-[#911327] text-[#D4AF37] hover:shadow-lg active:scale-98 cursor-pointer'
+                }`}
               >
                 <span>Proceed to Delivery</span>
               </button>
