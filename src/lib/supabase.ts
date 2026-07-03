@@ -11,8 +11,8 @@ const getSupabaseConfig = () => {
   const isInvalidKey = !key || key.startsWith('http') || key.includes('your-supabase-anon');
 
   if (isInvalidUrl || isInvalidKey) {
-    console.error(
-      "❌ Supabase environment variables (VITE_SUPABASE_URL and/or VITE_SUPABASE_ANON_KEY) are missing or misconfigured! " +
+    console.warn(
+      "⚠️ Supabase environment variables (VITE_SUPABASE_URL and/or VITE_SUPABASE_ANON_KEY) are missing or misconfigured! " +
       "Database connectivity is disabled. Please verify your environment configuration."
     );
     return { url: '', key: '' };
