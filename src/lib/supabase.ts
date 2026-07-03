@@ -540,33 +540,35 @@ export const dbService = {
     return [];
   },
 
-  /**
+/**
    * Save a newly placed order & order items to Supabase
    */
-  async saveOrder(order: { id: string; customer_name: string; phone: string; address: string; total_amount: number; status: string }, items: any[]) {
+  async saveOrder(order: { customer_name: string; phone: string; address: string; total_amount: number; status: string }, items: any[]) {
     if (isSupabaseConfigured && supabase) {
       try {
         console.log("Saving order to Supabase...");
-        const { error: orderErr } = await supabase
+        const { data: orderData, error: orderErr } = await supabase
           .from('orders')
           .insert([{
-            id: order.id,
             customer_name: order.customer_name,
             phone: order.phone,
             address: order.address,
             total_amount: order.total_amount,
             status: order.status,
             created_at: new Date().toISOString()
-          }]);
+          }])
+          .select()
+          .single();
 
         if (orderErr) {
           console.error("Supabase saveOrder error:", orderErr);
           throw orderErr;
         }
 
-        const orderItemsPayload = items.map((item, idx) => ({
-          id: `item-${order.id}-${idx}`,
-          order_id: order.id,
+        const newOrderId = orderData.id;
+
+        const orderItemsPayload = items.map((item) => ({
+          order_id: newOrderId,
           product_id: item.productId || item.product?.id,
           quantity: item.quantity,
           price: Number(item.price || item.product?.price || 0)
@@ -589,4 +591,3 @@ export const dbService = {
     }
     return false;
   }
-};
