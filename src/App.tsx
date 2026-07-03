@@ -489,6 +489,7 @@ export default function App() {
           cart={cart}
           setIsCartOpen={setIsCartOpen}
           setCurrentPage={handleNavigatePage}
+          onLoginSuccess={handleLoginSuccess}
         />
 
         {/* ================= FLOATING TOAST NOTIFICATION ================= */}

@@ -15,6 +15,7 @@ interface ChatWidgetProps {
   cart: CartItem[];
   setIsCartOpen: (open: boolean) => void;
   setCurrentPage: (page: Page) => void;
+  onLoginSuccess?: (name: string, email: string) => void;
 }
 
 interface Message {
@@ -26,12 +27,20 @@ interface Message {
   cardData?: any;
 }
 
+interface RegisteredUser {
+  name: string;
+  email: string;
+  phone: string;
+  password?: string;
+}
+
 export default function ChatWidget({
   products,
   addToCart,
   cart,
   setIsCartOpen,
-  setCurrentPage
+  setCurrentPage,
+  onLoginSuccess
 }: ChatWidgetProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
@@ -46,6 +55,13 @@ export default function ChatWidget({
   const [isTyping, setIsTyping] = useState(false);
   const [hasUpsold, setHasUpsold] = useState(false);
   const [escalated, setEscalated] = useState(false);
+
+  // Conversational signup / login flow state
+  const [signupStep, setSignupStep] = useState<'idle' | 'name' | 'email' | 'phone' | 'password' | 'agreement'>('idle');
+  const [signupData, setSignupData] = useState({ name: '', email: '', phone: '', password: '' });
+
+  const [loginStep, setLoginStep] = useState<'idle' | 'email' | 'password'>('idle');
+  const [loginData, setLoginData] = useState({ email: '', password: '' });
   
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const chatContainerRef = useRef<HTMLDivElement | null>(null);
@@ -89,8 +105,8 @@ export default function ChatWidget({
     setMessages(prev => [...prev, userMsg]);
     setInputText('');
     
-    // Process matching intent
-    processIntent(textToSend.toLowerCase().trim());
+    // Process matching intent with raw input
+    processIntent(textToSend.trim());
   };
 
   // Helper fuzzy matching for products
@@ -116,8 +132,34 @@ export default function ChatWidget({
     return found;
   };
 
-  const processIntent = async (query: string) => {
+  // We delegate conversational signup, login, and all other LLM queries to the server-side Gemini API with Supabase integration.
+  const processIntent = async (rawInput: string) => {
     setIsTyping(true);
+    const query = rawInput.toLowerCase().trim();
+
+    // Forgot password / reset password / change password bypass prevention
+    if (
+      query.includes('forgot my password') || 
+      query.includes('forgot password') || 
+      query.includes('reset my password') || 
+      query.includes('reset password') || 
+      query.includes('lost my password') || 
+      query.includes('lost password') || 
+      query.includes('don\'t know my password') || 
+      query.includes('do not know my password') || 
+      query.includes('forgot it') || 
+      query.includes('forgotten password') || 
+      query.includes('no password') ||
+      query.includes('change password') || 
+      query.includes('update password') || 
+      query.includes('different password') || 
+      query.includes('new password') || 
+      query.includes('change my password')
+    ) {
+      addBotMessage("No worries, let's reset it. I'll guide you to the Forgot Password option.");
+      setIsTyping(false);
+      return;
+    }
 
     // 1. Emergency Safety Guardrails
     if (
@@ -423,10 +465,52 @@ export default function ChatWidget({
       return;
     }
 
-    // Unrecognized fallback
-    addBotMessage(
-      "I didn't quite catch that. 🪔 Try selecting an action below, or typing questions like: 'Show sparklers', 'Do you deliver to 600020?', 'Apply DIWALI20', or ask for 'help'!"
-    );
+    // Send to Gemini API for smart conversational processing and Supabase authentication handling
+    try {
+      console.log("[Chat Widget] Sending query to server-side Gemini:", rawInput);
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: rawInput,
+          history: messages.slice(-12).map(m => ({ sender: m.sender, text: m.text }))
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Server returned status ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log("[Chat Widget] Response received from Gemini:", data);
+
+      if (data.session) {
+        console.log("[Chat Widget] Session update received:", data.session);
+        if (onLoginSuccess) {
+          onLoginSuccess(data.session.name, data.session.email);
+        }
+        localStorage.setItem('sparkle_user', JSON.stringify({
+          name: data.session.name,
+          email: data.session.email,
+          role: 'CUSTOMER',
+          isLoggedIn: true
+        }));
+      }
+
+      setIsTyping(false);
+      setMessages(prev => [...prev, {
+        id: `bot-${Date.now()}`,
+        sender: 'bot',
+        text: data.text || "How else can I help your celebration today? 🪔",
+        timestamp: new Date()
+      }]);
+    } catch (err) {
+      console.error("[Chat Widget Error]:", err);
+      setIsTyping(false);
+      addBotMessage("I am having trouble connecting to my server right now. 🪔 Please try again, or connect with our support line if you need immediate assistance!");
+    }
   };
 
   const handlePincodeCheck = async (pincode: string) => {
@@ -817,9 +901,10 @@ export default function ChatWidget({
               <div className="px-3 py-2 bg-[#FFFBF7] border-t border-slate-100 flex gap-1.5 overflow-x-auto scrollbar-none whitespace-nowrap shrink-0">
                 {[
                   { label: '🎆 Browse Products', query: 'Browse Products' },
+                  { label: '📝 Create Account', query: 'create account' },
+                  { label: '🔐 Sign In', query: 'log in' },
                   { label: '🚚 Check Delivery', query: 'Do you deliver to my pincode?' },
                   { label: '📦 Track My Order', query: 'Track order' },
-                  { label: '🏷️ Discounts', query: 'discount coupons' },
                   { label: '🤝 Talk to Human', query: 'talk to human' }
                 ].map((item, idx) => (
                   <button
@@ -841,7 +926,7 @@ export default function ChatWidget({
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') handleSend(inputText);
                   }}
-                  placeholder="Ask Diya about crackers, shipping, etc..."
+                  placeholder="Ask Priya about crackers, login, etc..."
                   className="flex-1 text-xs px-3.5 py-2 rounded-xl border border-slate-200 focus:outline-none focus:border-[#7A0C1E] font-sans"
                 />
                 <button
@@ -864,7 +949,7 @@ export default function ChatWidget({
         {/* Floating Trigger Bubble */}
         <button
           onClick={() => setIsOpen(!isOpen)}
-          id="diya-text-chat-btn"
+          id="priya-text-chat-btn"
           className="w-14 h-14 md:w-16 md:h-16 rounded-full bg-[#7A0C1E] hover:bg-[#911327] border-2 border-[#D4AF37] text-[#D4AF37] hover:text-white flex items-center justify-center shadow-2xl transition-all duration-300 relative cursor-pointer active:scale-95"
           aria-label="Open Chat Assistant"
         >
