@@ -82,6 +82,11 @@ export default function CartDrawer({
 
   const submitOrderToSheet = async (customerId: string) => {
     setCheckoutError(null);
+        // Submit each cart item individually to Sheet.best
+    for (let i = 0; i < cart.length; i++) {
+      const item = cart[i];
+      const sn = `P${String(i + 1).padStart(3, '0')}`;
+      
    // Calculate item discount percentage
       const discountPercent = item.product.originalPrice
         ? Math.round(((item.product.originalPrice - item.product.price) / item.product.originalPrice) * 100)
