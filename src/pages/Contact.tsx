@@ -100,7 +100,7 @@ export default function Contact() {
                   </div>
                   <div>
                     <h4 className="font-bold text-slate-800">Customer Helpline</h4>
-                    <p className="font-mono mt-0.5">+91 98765 43210</p>
+                    <p className="font-mono mt-0.5">+91 86680 45519</p>
                     <p className="text-[10px] text-slate-400">Call or WhatsApp anytime</p>
                   </div>
                 </div>
@@ -157,7 +157,7 @@ export default function Contact() {
                 ⚠️ Emergency & Safety Support
               </h4>
               <p className="text-[11px] text-[#FFF8F0]/70 leading-relaxed">
-                In case of transport inquiries, regulatory questions, or bulk school preorders, you can contact our special safety logistics pilot directly at <b className="text-white font-mono">+91 98765 43210</b>.
+                In case of transport inquiries, regulatory questions, or bulk school preorders, you can contact our special safety logistics pilot directly at <b className="text-white font-mono">+91 86680 45519</b>.
               </p>
             </div>
           </div>

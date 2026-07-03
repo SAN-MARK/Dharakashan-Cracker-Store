@@ -700,21 +700,21 @@ export default function ChatWidget({
                             </div>
                             <div className="pt-2 flex flex-col gap-1.5">
                               <a 
-                                href="https://wa.me/919876543210" 
+                                href="https://wa.me/918668045519" 
                                 target="_blank" 
                                 rel="noopener noreferrer"
                                 onClick={() => setEscalated(true)}
                                 className="w-full bg-[#25D366] hover:bg-[#20ba59] text-white font-sans font-bold text-[10px] py-1.5 rounded-lg flex items-center justify-center gap-1 shadow-xs transition-colors"
                               >
                                 <MessageCircle className="w-3.5 h-3.5 fill-current" />
-                                <span>Connect via WhatsApp</span>
+                                <span>Connect via WhatsApp (+91 86680 45519)</span>
                               </a>
                               <a 
-                                href="tel:+919876543210"
+                                href="tel:+918668045519"
                                 className="w-full bg-slate-800 hover:bg-slate-900 text-white font-sans font-bold text-[10px] py-1.5 rounded-lg flex items-center justify-center gap-1 shadow-xs transition-colors"
                               >
                                 <Phone className="w-3 h-3" />
-                                <span>Call Helpdesk Line</span>
+                                <span>Call Helpdesk Line (+91 86680 45519)</span>
                               </a>
                             </div>
                           </div>
