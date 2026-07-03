@@ -5,6 +5,7 @@ import Footer from './components/Footer';
 import CartDrawer from './components/CartDrawer';
 import ProductQuickView from './components/ProductQuickView';
 import VoiceAssistant from './components/VoiceAssistant';
+import ChatWidget from './components/ChatWidget';
 import { Language } from './lib/translations';
 import { dbService, isSupabaseConfigured } from './lib/supabase';
 
@@ -479,6 +480,15 @@ export default function App() {
           searchFilters={searchFilters}
           setSearchFilters={setSearchFilters}
           setIsCartOpen={setIsCartOpen}
+        />
+
+        {/* Text-based Chat Assistant Module */}
+        <ChatWidget
+          products={products}
+          addToCart={addToCart}
+          cart={cart}
+          setIsCartOpen={setIsCartOpen}
+          setCurrentPage={handleNavigatePage}
         />
 
         {/* ================= FLOATING TOAST NOTIFICATION ================= */}

@@ -12,6 +12,7 @@ export interface Product {
   safetyRating: string; // e.g., "PESO Certified"
   brand: string; // e.g., "Standard", "Sivakasi Elite", "Sparkle Safe"
   soundLevel?: "Silent" | "Low" | "Medium" | "High";
+  stock?: number;
 }
 
 export interface CartItem {

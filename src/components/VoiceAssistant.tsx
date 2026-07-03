@@ -535,7 +535,7 @@ export default function VoiceAssistant({
   return (
     <>
       {/* Voice Assistant Button and Live Info Floating Panel */}
-      <div className="fixed bottom-20 md:bottom-6 right-6 z-50 flex flex-col items-end gap-3 font-sans select-none">
+      <div className="fixed bottom-20 md:bottom-6 left-6 z-50 flex flex-col items-start gap-3 font-sans select-none">
         
         {/* Secure Connection Warning Badge */}
         {!isSecure && (
