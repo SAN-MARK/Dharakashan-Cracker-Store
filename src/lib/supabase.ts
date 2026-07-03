@@ -3,16 +3,18 @@ import { Product } from '../types';
 import { PRODUCTS } from '../data/products';
 
 const getSupabaseConfig = () => {
-  let url = import.meta.env.VITE_SUPABASE_URL || '';
-  let key = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+  const url = import.meta.env.VITE_SUPABASE_URL || '';
+  const key = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
-  // Clean up potential misconfiguration (e.g., if key was mistakenly set to the URL, or is invalid)
-  if (!url || url.includes('your-supabase') || !url.startsWith('http')) {
-    url = 'https://gkfjssptlnniltguwojh.supabase.co';
-  }
+  const isInvalidUrl = !url || url.includes('your-supabase') || !url.startsWith('http');
+  const isInvalidKey = !key || key.startsWith('http') || key.includes('your-supabase-anon');
 
-  if (!key || key.startsWith('http') || key.includes('your-supabase-anon')) {
-    key = 'sb_publishable_NdIT74bjP6w4DpLhLFBoKA_K5yZDBs5';
+  if (isInvalidUrl || isInvalidKey) {
+    console.error(
+      "❌ Supabase environment variables (VITE_SUPABASE_URL and/or VITE_SUPABASE_ANON_KEY) are missing or misconfigured! " +
+      "Database connectivity is disabled. Please verify your environment configuration."
+    );
+    return { url: '', key: '' };
   }
 
   return { url, key };
@@ -240,7 +242,7 @@ export const dbService = {
   },
 
   /**
-   * Fetch all products from Supabase (auto-seeds if table is empty)
+   * Fetch all products from Supabase
    */
   async getProducts(): Promise<Product[]> {
     if (isSupabaseConfigured && supabase) {
@@ -276,41 +278,10 @@ export const dbService = {
             stock: item.stock ? Number(item.stock) : 100
           }));
         } else {
-          console.log("Supabase products table is empty. Auto-seeding database...");
-          const seedResult = await this.seedSupabase();
-          if (seedResult.success) {
-            // Re-fetch after seed
-            const { data: refetchedData, error: refetchErr } = await supabase
-              .from('products')
-              .select('*')
-              .order('id', { ascending: true });
-            if (refetchErr) {
-              console.error("Supabase products re-fetch error after seed:", refetchErr);
-              throw refetchErr;
-            }
-            if (refetchedData && refetchedData.length > 0) {
-              this.hasFallenBack = false;
-              return refetchedData.map((item: any) => ({
-                id: String(item.id),
-                name: item.name,
-                category: item.category,
-                price: Number(item.price),
-                originalPrice: item.original_price ? Number(item.original_price) : (item.originalPrice ? Number(item.originalPrice) : undefined),
-                rating: item.rating ? Number(item.rating) : 4.5,
-                reviewCount: item.review_count ? Number(item.review_count) : (item.reviewCount ? Number(item.reviewCount) : 45),
-                image: item.image_url || item.image,
-                description: item.description,
-                isBestSeller: item.is_best_seller || item.isBestSeller || false,
-                safetyRating: item.safety_rating || item.safetyRating || 'PESO Approved (Green)',
-                brand: item.brand || 'Sivakasi Elite',
-                soundLevel: item.sound_level || item.soundLevel || 'Low',
-                stock: item.stock ? Number(item.stock) : 100
-              }));
-            }
-          }
+          console.warn("Products table returned 0 rows");
         }
       } catch (err) {
-        console.error("Supabase products fetch or auto-seed exception, using local fallback:", err);
+        console.error("Supabase products fetch exception, using local fallback:", err);
         this.hasFallenBack = true;
         return PRODUCTS;
       }
