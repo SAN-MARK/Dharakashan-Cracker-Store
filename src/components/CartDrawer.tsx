@@ -140,7 +140,7 @@ export default function CartDrawer({
     existingOrders.unshift(orderRecord);
     localStorage.setItem('sparkle_orders', JSON.stringify(existingOrders));
 
-    // Save to Supabase (robust fallback try-catch)
+   // Save to Supabase — now surfaces real errors instead of silently swallowing them
     try {
       await dbService.saveOrder({
         id: customerId,
@@ -154,8 +154,10 @@ export default function CartDrawer({
         quantity: item.quantity,
         price: item.product.price
       })));
-    } catch (dbErr) {
-      console.error("Failed to persist order to Supabase:", dbErr);
+      console.log("✅ Order successfully saved to Supabase:", customerId);
+    } catch (dbErr: any) {
+      console.error("❌ Failed to persist order to Supabase:", dbErr);
+      alert("Warning: your order was placed, but saving to our database failed. Error: " + (dbErr?.message || JSON.stringify(dbErr)));
     }
 
     // Clear the main application cart state
