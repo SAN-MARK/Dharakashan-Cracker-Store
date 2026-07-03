@@ -143,7 +143,6 @@ export default function CartDrawer({
    // Save to Supabase — now surfaces real errors instead of silently swallowing them
     try {
       await dbService.saveOrder({
-        id: customerId,
         customer_name: fullName || "Anonymous",
         phone: phone || "",
         address: address || "",
