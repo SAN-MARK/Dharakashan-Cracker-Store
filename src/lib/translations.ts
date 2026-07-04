@@ -9,7 +9,6 @@ export const TRANSLATIONS: Record<Language, Record<string, string>> = {
     'nav.combo': 'Build Combo 🎁',
     'nav.contact': 'Contact Us',
     'nav.bulk': 'Bulk Orders 🏛️',
-    'nav.track': 'Track Order 📦',
     
     // Categories
     'cat.all': 'All Products',
@@ -77,7 +76,6 @@ export const TRANSLATIONS: Record<Language, Record<string, string>> = {
     'nav.combo': 'பெட்டியை உருவாக்கு 🎁',
     'nav.contact': 'தொடர்பு கொள்ள',
     'nav.bulk': 'மொத்த ஆர்டர்கள் 🏛️',
-    'nav.track': 'ஆர்டர் கண்காணிப்பு 📦',
     
     // Categories
     'cat.all': 'அனைத்து பட்டாசுகள்',

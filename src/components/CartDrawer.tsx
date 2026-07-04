@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { X, Plus, Minus, Trash2, CheckCircle, Flame, ShieldAlert, ShoppingBag, MessageCircle } from 'lucide-react';
 import { CartItem, Product } from '../types';
 import { getItemUnitPrice, getItemTotalPrice } from '../lib/pricing';
@@ -46,16 +46,6 @@ export default function CartDrawer({
   // Checkout Form State
   const [fullName, setFullName] = useState(userName || '');
   const [email, setEmail] = useState(userEmail || '');
-
-  // Pre-fill fields when user log-in state changes
-  useEffect(() => {
-    if (userName) {
-      setFullName(userName);
-    }
-    if (userEmail) {
-      setEmail(userEmail);
-    }
-  }, [userName, userEmail]);
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
   const [deliveryDate, setDeliveryDate] = useState('2026-11-01'); // Safe pre-diwali shipping dates

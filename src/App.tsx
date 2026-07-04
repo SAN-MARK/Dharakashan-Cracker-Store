@@ -7,7 +7,7 @@ import ProductQuickView from './components/ProductQuickView';
 import VoiceAssistant from './components/VoiceAssistant';
 import ChatWidget from './components/ChatWidget';
 import { Language } from './lib/translations';
-import { dbService, isSupabaseConfigured, supabase, signOutUser } from './lib/supabase';
+import { dbService, isSupabaseConfigured } from './lib/supabase';
 
 // Pages
 import Home from './pages/Home';
@@ -17,7 +17,6 @@ import Login from './pages/Login';
 import Contact from './pages/Contact';
 import ComboBuilder from './pages/ComboBuilder';
 import BulkOrders from './pages/BulkOrders';
-import TrackOrder from './pages/TrackOrder';
 
 // Lucide Icons for Sticky Bottom Bar
 import { Home as HomeIcon, ShoppingBag, Info, Phone, MessageSquare } from 'lucide-react';
@@ -102,69 +101,6 @@ export default function App() {
     }
   }, []);
 
-  // Subscribe to Supabase auth state change listener
-  useEffect(() => {
-    if (!isSupabaseConfigured || !supabase) return;
-
-    // Check if user is already logged in on mount
-    const checkSession = async () => {
-      try {
-        const { data: { session: currentSession }, error } = await supabase.auth.getSession();
-        if (error) {
-          console.error("Error getting session:", error);
-          return;
-        }
-        if (currentSession?.user) {
-          const user = currentSession.user;
-          const email = user.email || null;
-          const name = user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || 'Google User';
-          
-          setSession({
-            email,
-            name,
-            role: 'CUSTOMER',
-            isLoggedIn: true,
-          });
-        }
-      } catch (err) {
-        console.error("Error checking session on mount:", err);
-      }
-    };
-
-    checkSession();
-
-    // Subscribe to auth state change events
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, currentSession) => {
-      if (currentSession?.user) {
-        const user = currentSession.user;
-        const email = user.email || null;
-        const name = user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || 'Google User';
-        
-        const updatedSession: UserSession = {
-          email,
-          name,
-          role: 'CUSTOMER',
-          isLoggedIn: true,
-        };
-        setSession(updatedSession);
-        localStorage.setItem('sparkle_user', JSON.stringify(updatedSession));
-      } else {
-        const resetSession: UserSession = {
-          email: null,
-          name: null,
-          role: 'CUSTOMER',
-          isLoggedIn: false,
-        };
-        setSession(resetSession);
-        localStorage.removeItem('sparkle_user');
-      }
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, []);
-
   // Sync cart to localStorage
   const saveCartToStorage = (updatedCart: CartItem[]) => {
     setCart(updatedCart);
@@ -235,14 +171,7 @@ export default function App() {
   };
 
   // Logout Handler
-  const handleLogout = async () => {
-    if (isSupabaseConfigured && supabase) {
-      try {
-        await signOutUser();
-      } catch (err) {
-        console.error("Error signing out from Supabase:", err);
-      }
-    }
+  const handleLogout = () => {
     const resetSession: UserSession = {
       email: null,
       name: null,
@@ -331,10 +260,6 @@ export default function App() {
 
           {currentPage === 'bulk' && (
             <BulkOrders language={language} />
-          )}
-
-          {currentPage === 'track' && (
-            <TrackOrder language={language} />
           )}
         </main>
 
