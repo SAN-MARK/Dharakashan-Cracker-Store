@@ -33,6 +33,30 @@ export const supabase = isSupabaseConfigured
   ? createClient(supabaseUrl, supabaseAnonKey) 
   : null;
 
+export async function signInWithGoogle() {
+  if (!isSupabaseConfigured || !supabase) {
+    console.error("Cannot sign in: Supabase is not configured");
+    return;
+  }
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: window.location.origin
+    }
+  });
+  if (error) {
+    console.error('Google sign-in error:', error);
+    throw error;
+  }
+  return data;
+}
+
+export async function signOutUser() {
+  if (supabase) {
+    await supabase.auth.signOut();
+  }
+}
+
 if (!isSupabaseConfigured) {
   console.warn(
     "⚠️ Supabase is not configured yet. VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are missing in environment. " +

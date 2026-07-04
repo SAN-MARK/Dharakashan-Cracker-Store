@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Mail, Lock, User, Eye, EyeOff, ShieldCheck, Heart } from 'lucide-react';
 import { UserSession } from '../types';
-import { supabase } from '../lib/supabase';
+import { supabase, signInWithGoogle, isSupabaseConfigured } from '../lib/supabase';
 
 // Import our generated hero banner
 import heroBanner from '../assets/images/hero_banner_diwali_1782969842884.jpg';
@@ -25,6 +25,23 @@ export default function Login({ handleLoginSuccess }: LoginProps) {
   const [loading, setLoading] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
+
+  const handleGoogleSignIn = async () => {
+    setErrorMsg('');
+    setSuccessMsg('');
+    if (!isSupabaseConfigured) {
+      setErrorMsg("Cannot sign in: Supabase is not configured yet. Check environment configuration.");
+      return;
+    }
+    try {
+      setLoading(true);
+      await signInWithGoogle();
+    } catch (err: any) {
+      setErrorMsg(err?.message || "An error occurred while signing in with Google.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -357,6 +374,28 @@ export default function Login({ handleLoginSuccess }: LoginProps) {
                 ) : (
                   <span>{isSignUp ? 'Create Festive Account' : 'Secure Festive Log In'}</span>
                 )}
+              </button>
+
+              {/* Divider */}
+              <div className="relative flex py-2 items-center">
+                <div className="flex-grow border-t border-slate-200"></div>
+                <span className="flex-shrink mx-4 text-slate-400 text-[10px] font-bold font-sans tracking-widest uppercase">OR</span>
+                <div className="flex-grow border-t border-slate-200"></div>
+              </div>
+
+              {/* Google OAuth Button */}
+              <button
+                type="button"
+                onClick={handleGoogleSignIn}
+                className="w-full bg-white hover:bg-slate-50 text-slate-700 font-sans font-bold text-xs py-3.5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer flex items-center justify-center gap-2 active:scale-98"
+              >
+                <svg width="18" height="18" viewBox="0 0 48 48" className="shrink-0">
+                  <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3c-1.6 4.7-6.1 8-11.3 8-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 8 3l6-6C33.6 6 29.1 4 24 4 13 4 4 13 4 24s9 20 20 20 20-9 20-20c0-1.3-.1-2.7-.4-3.5z"/>
+                  <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.5 15.1 18.9 12 24 12c3.1 0 5.8 1.1 8 3l6-6C33.6 6 29.1 4 24 4 16.3 4 9.6 8.3 6.3 14.7z"/>
+                  <path fill="#4CAF50" d="M24 44c5 0 9.5-1.9 12.9-5.1l-6-4.9c-2 1.4-4.5 2.2-6.9 2.2-5.2 0-9.6-3.3-11.2-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z"/>
+                  <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.3 4.3-4.3 5.6l6 4.9C40.5 35.6 44 30.3 44 24c0-1.3-.1-2.7-.4-3.5z"/>
+                </svg>
+                <span>Continue with Google</span>
               </button>
 
               {/* Alternative Switch */}

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Menu, X, ShoppingBag, User, LogOut, Globe } from 'lucide-react';
 import { Page, CartItem, UserSession } from '../types';
 import { translate, Language } from '../lib/translations';
+import { signInWithGoogle, signOutUser, isSupabaseConfigured } from '../lib/supabase';
 
 interface NavbarProps {
   currentPage: Page;
@@ -41,6 +42,18 @@ export default function Navbar({
   }, []);
 
   const totalCartItems = cart.reduce((total, item) => total + item.quantity, 0);
+
+  const handleGoogleSignIn = async () => {
+    if (isSupabaseConfigured) {
+      try {
+        await signInWithGoogle();
+      } catch (err) {
+        console.error("Google sign-in error:", err);
+      }
+    } else {
+      setCurrentPage('login');
+    }
+  };
 
   const navLinks: { id: Page; label: string }[] = [
     { id: 'home', label: translate('nav.home', language) },
@@ -150,32 +163,33 @@ export default function Navbar({
             <div className="flex items-center gap-2" id="navbar-user-actions">
               <button
                 onClick={() => setCurrentPage('contact')} // Go to contact/profile
-                className="hidden md:flex items-center gap-2 bg-white/10 hover:bg-white/15 px-3 py-1.5 rounded-full border border-white/10 transition-all cursor-pointer text-xs"
+                className="hidden md:flex items-center gap-2 bg-white/10 hover:bg-white/15 px-3 py-1.5 rounded-full border border-white/10 transition-all cursor-pointer text-xs animate-fade-in"
               >
-                <div className="w-5 h-5 bg-[#D4AF37] text-[#7A0C1E] rounded-full flex items-center justify-center font-bold font-mono">
-                  {session.name ? session.name[0].toUpperCase() : 'U'}
+                <div className="w-5 h-5 bg-[#D4AF37] text-[#7A0C1E] rounded-full flex items-center justify-center font-bold font-mono text-[10px]">
+                  {session.name ? session.name[0].toUpperCase() : (session.email ? session.email[0].toUpperCase() : 'U')}
                 </div>
-                <span className="max-w-[70px] truncate text-white/90">
-                  {session.name}
+                <span className="max-w-[110px] truncate text-white/90 font-semibold">
+                  {session.name || session.email}
                 </span>
               </button>
               <button
                 onClick={handleLogout}
-                className="p-2 rounded-full hover:bg-white/10 text-white/75 hover:text-red-300 transition-all cursor-pointer"
+                className="flex items-center gap-1.5 bg-red-950/20 hover:bg-red-950/40 border border-red-500/20 px-3 py-1.5 rounded-full text-white/80 hover:text-red-300 transition-all cursor-pointer text-xs"
                 id="navbar-logout-btn"
-                title="Logout"
+                title="Sign Out"
               >
-                <LogOut className="w-4 h-4" />
+                <LogOut className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Sign Out</span>
               </button>
             </div>
           ) : (
             <button
-              onClick={() => setCurrentPage('login')}
-              className="flex items-center gap-1.5 bg-[#D4AF37] hover:bg-[#c29f2e] text-[#7A0C1E] hover:text-white font-sans font-semibold text-xs px-3.5 py-1.5 rounded-full shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer active:scale-95"
+              onClick={handleGoogleSignIn}
+              className="flex items-center gap-2 bg-[#D4AF37] hover:bg-[#c29f2e] text-[#7A0C1E] hover:text-white font-sans font-extrabold text-xs px-4 py-2 rounded-full shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer active:scale-95 animate-fade-in"
               id="navbar-login-btn"
             >
-              <User className="w-3.5 h-3.5" />
-              <span>Login</span>
+              <User className="w-4 h-4" />
+              <span>{isSupabaseConfigured ? 'Sign in with Google' : 'Login'}</span>
             </button>
           )}
 
@@ -230,14 +244,14 @@ export default function Navbar({
             </button>
           </div>
 
-          {session.isLoggedIn && (
-            <div className="flex items-center gap-3 bg-white/5 p-3 rounded-xl border border-white/10 mt-2">
+          {session.isLoggedIn ? (
+            <div className="flex items-center gap-3 bg-white/5 p-3 rounded-xl border border-white/10 mt-2 animate-fade-in">
               <div className="w-8 h-8 bg-[#D4AF37] text-[#7A0C1E] rounded-full flex items-center justify-center font-bold text-sm">
-                {session.name ? session.name[0].toUpperCase() : 'U'}
+                {session.name ? session.name[0].toUpperCase() : (session.email ? session.email[0].toUpperCase() : 'U')}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold truncate text-white">{session.name}</p>
-                <p className="text-[10px] text-white/50 truncate font-mono">{session.email}</p>
+                <p className="text-sm font-semibold truncate text-white">{session.name || session.email}</p>
+                {session.email && <p className="text-[10px] text-white/50 truncate font-mono">{session.email}</p>}
               </div>
               <button
                 onClick={() => {
@@ -246,7 +260,20 @@ export default function Navbar({
                 }}
                 className="text-xs bg-red-950/40 text-red-300 hover:text-red-100 px-2.5 py-1.5 rounded-lg border border-red-900/30 font-semibold"
               >
-                Logout
+                Sign Out
+              </button>
+            </div>
+          ) : (
+            <div className="mt-2 animate-fade-in">
+              <button
+                onClick={() => {
+                  handleGoogleSignIn();
+                  setIsMobileMenuOpen(false);
+                }}
+                className="w-full py-2.5 px-4 bg-[#D4AF37] hover:bg-[#c29f2e] text-[#7A0C1E] hover:text-white font-sans font-extrabold text-sm rounded-xl shadow-md transition-all flex items-center justify-center gap-2"
+              >
+                <User className="w-4 h-4" />
+                <span>{isSupabaseConfigured ? 'Sign in with Google' : 'Login'}</span>
               </button>
             </div>
           )}
